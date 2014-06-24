@@ -1,15 +1,11 @@
 package org.unicamp.mc626.example;
 
-public class ConcurrentCounter {
+public class ConcurrentCounterWithBug {
 
 	private int count = 0;
 
 	public int getNext() {
-		int c;
-		synchronized (this) {
-			c = ++count;
-		}
-		return c;
+		return ++count;
 	}
 
 	public synchronized int getCurrent() {

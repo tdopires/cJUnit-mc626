@@ -9,8 +9,9 @@ import de.fzi.cjunit.util.TestBarrier;
 
 @RunWith(ConcurrentRunner.class)
 public class ConcurrentCounterTest {
-	int count = 0;
+
 	ConcurrentCounter counter = new ConcurrentCounter();
+	ConcurrentCounterWithBug counterWithBug = new ConcurrentCounterWithBug();
 
 	// @Test
 	@ConcurrentTest(threadCount = 2)
@@ -20,19 +21,11 @@ public class ConcurrentCounterTest {
 		assertEquals(2, counter.getCurrent());
 	}
 
-	class ConcurrentCounter {
-		int count = 0;
-
-		public int getNext() {
-			int c;
-			synchronized (this) {
-				c = ++count;
-			}
-			return c;
-		}
-
-		public synchronized int getCurrent() {
-			return count;
-		}
+	@ConcurrentTest(threadCount = 2)
+	public void test2() {
+		counterWithBug.getNext();
+		TestBarrier.await();
+		assertEquals(2, counter.getCurrent());
 	}
+
 }
