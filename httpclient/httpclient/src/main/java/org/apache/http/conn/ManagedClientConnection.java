@@ -33,22 +33,21 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLSession;
 
 import org.apache.http.HttpClientConnection;
+import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpHost;
-import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpContext;
+
+import org.apache.http.conn.routing.HttpRoute;
 
 /**
  * A client-side connection with advanced connection logic.
  * Instances are typically obtained from a connection manager.
  *
  * @since 4.0
- *
- * @deprecated (4.3) replaced by {@link HttpClientConnectionManager}.
  */
-@Deprecated
 public interface ManagedClientConnection extends
-    HttpClientConnection, HttpRoutedConnection, ManagedHttpClientConnection, ConnectionReleaseTrigger {
+    HttpClientConnection, HttpInetConnection, ConnectionReleaseTrigger {
 
     /**
      * Indicates whether this connection is secure.
@@ -58,7 +57,6 @@ public interface ManagedClientConnection extends
      * @return  <code>true</code> if this connection is secure,
      *          <code>false</code> otherwise
      */
-    @Override
     boolean isSecure();
 
     /**
@@ -67,7 +65,6 @@ public interface ManagedClientConnection extends
      * @return  the route established so far, or
      *          <code>null</code> if not connected
      */
-    @Override
     HttpRoute getRoute();
 
     /**
@@ -86,7 +83,6 @@ public interface ManagedClientConnection extends
      * @return  the underlying SSL session if available,
      *          <code>null</code> otherwise
      */
-    @Override
     SSLSession getSSLSession();
 
     /**
@@ -203,21 +199,21 @@ public interface ManagedClientConnection extends
      */
     boolean isMarkedReusable();
 
-    /**
-     * Assigns a state object to this connection. Connection managers may make
+    /** 
+     * Assigns a state object to this connection. Connection managers may make 
      * use of the connection state when allocating persistent connections.
-     *
+     *  
      * @param state The state object
      */
     void setState(Object state);
-
+    
     /**
      * Returns the state object associated with this connection.
-     *
+     * 
      * @return The state object
      */
     Object getState();
-
+    
     /**
      * Sets the duration that this connection can remain idle before it is
      * reused. The connection should not be used again if this time elapses. The

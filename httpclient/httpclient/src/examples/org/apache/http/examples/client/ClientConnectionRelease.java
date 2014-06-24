@@ -27,57 +27,74 @@
 
 package org.apache.http.examples.client;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 /**
- * This example demonstrates the recommended way of using API to make sure
+ * This example demonstrates the recommended way of using API to make sure 
  * the underlying connection gets released back to the connection manager.
  */
 public class ClientConnectionRelease {
 
     public final static void main(String[] args) throws Exception {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        try {
-            HttpGet httpget = new HttpGet("http://localhost/");
+        HttpClient httpclient = new DefaultHttpClient();
 
-            System.out.println("Executing request " + httpget.getRequestLine());
-            CloseableHttpResponse response = httpclient.execute(httpget);
+        HttpGet httpget = new HttpGet("http://www.apache.org/"); 
+
+        // Execute HTTP request
+        System.out.println("executing request " + httpget.getURI());
+        HttpResponse response = httpclient.execute(httpget);
+
+        System.out.println("----------------------------------------");
+        System.out.println(response.getStatusLine());
+        System.out.println("----------------------------------------");
+
+        // Get hold of the response entity
+        HttpEntity entity = response.getEntity();
+        
+        // If the response does not enclose an entity, there is no need
+        // to bother about connection release
+        if (entity != null) {
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(entity.getContent()));
             try {
-                System.out.println("----------------------------------------");
-                System.out.println(response.getStatusLine());
+                
+                // do something useful with the response
+                System.out.println(reader.readLine());
+                
+            } catch (IOException ex) {
 
-                // Get hold of the response entity
-                HttpEntity entity = response.getEntity();
+                // In case of an IOException the connection will be released
+                // back to the connection manager automatically
+                throw ex;
+                
+            } catch (RuntimeException ex) {
 
-                // If the response does not enclose an entity, there is no need
-                // to bother about connection release
-                if (entity != null) {
-                    InputStream instream = entity.getContent();
-                    try {
-                        instream.read();
-                        // do something useful with the response
-                    } catch (IOException ex) {
-                        // In case of an IOException the connection will be released
-                        // back to the connection manager automatically
-                        throw ex;
-                    } finally {
-                        // Closing the input stream will trigger connection release
-                        instream.close();
-                    }
-                }
+                // In case of an unexpected exception you may want to abort
+                // the HTTP request in order to shut down the underlying 
+                // connection and release it back to the connection manager.
+                httpget.abort();
+                throw ex;
+                
             } finally {
-                response.close();
+
+                // Closing the input stream will trigger connection release
+                reader.close();
+                
             }
-        } finally {
-            httpclient.close();
         }
+
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpclient.getConnectionManager().shutdown();        
     }
 
 }

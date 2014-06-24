@@ -1,4 +1,8 @@
 /*
+ * $HeadURL$
+ * $Revision$
+ * $Date$
+ *
  * ====================================================================
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -24,6 +28,7 @@
  * <http://www.apache.org/>.
  *
  */
+
 package org.apache.http.impl.cookie;
 
 import java.util.Collection;
@@ -42,8 +47,8 @@ import org.apache.http.cookie.SetCookie;
  * to never match a suffix from a black list. May be used to provide
  * additional security for cross-site attack types by preventing
  * cookies from apparent domains that are not publicly available.
- * An uptodate list of suffixes can be obtained from
- * <a href="http://publicsuffix.org/">publicsuffix.org</a>
+ * An uptodate list of suffixes can be obtained from 
+ * <a href="http://publicsuffix.org/">publicsuffix.org</a> 
  *
  * @since 4.0
  */
@@ -52,84 +57,67 @@ public class PublicSuffixFilter implements CookieAttributeHandler {
     private Set<String> exceptions;
     private Set<String> suffixes;
 
-    public PublicSuffixFilter(final CookieAttributeHandler wrapped) {
+    public PublicSuffixFilter(CookieAttributeHandler wrapped) {
         this.wrapped = wrapped;
     }
-
+   
     /**
      * Sets the suffix blacklist patterns.
      * A pattern can be "com", "*.jp"
      * TODO add support for patterns like "lib.*.us"
      * @param suffixes
      */
-    public void setPublicSuffixes(final Collection<String> suffixes) {
+    public void setPublicSuffixes(Collection<String> suffixes) {
         this.suffixes = new HashSet<String>(suffixes);
     }
-
+    
     /**
      * Sets the exceptions from the blacklist. Exceptions can not be patterns.
      * TODO add support for patterns
      * @param exceptions
      */
-    public void setExceptions(final Collection<String> exceptions) {
+    public void setExceptions(Collection<String> exceptions) {
         this.exceptions = new HashSet<String>(exceptions);
     }
 
     /**
      * Never matches if the cookie's domain is from the blacklist.
      */
-    @Override
-    public boolean match(final Cookie cookie, final CookieOrigin origin) {
-        if (isForPublicSuffix(cookie)) {
-            return false;
-        }
+    public boolean match(Cookie cookie, CookieOrigin origin) {
+        if (isForPublicSuffix(cookie)) return false;
         return wrapped.match(cookie, origin);
     }
 
-    @Override
-    public void parse(final SetCookie cookie, final String value) throws MalformedCookieException {
+    public void parse(SetCookie cookie, String value) throws MalformedCookieException {
         wrapped.parse(cookie, value);
     }
 
-    @Override
-    public void validate(final Cookie cookie, final CookieOrigin origin) throws MalformedCookieException {
+    public void validate(Cookie cookie, CookieOrigin origin) throws MalformedCookieException {
         wrapped.validate(cookie, origin);
     }
-
-    private boolean isForPublicSuffix(final Cookie cookie) {
+    
+    private boolean isForPublicSuffix(Cookie cookie) {
         String domain = cookie.getDomain();
-        if (domain.startsWith(".")) {
-            domain = domain.substring(1);
-        }
+        if (domain.startsWith(".")) domain = domain.substring(1);
         domain = Punycode.toUnicode(domain);
-
+        
         // An exception rule takes priority over any other matching rule.
         if (this.exceptions != null) {
-            if (this.exceptions.contains(domain)) {
-                return false;
-            }
+            if (this.exceptions.contains(domain)) return false;
         }
 
-
-        if (this.suffixes == null) {
-            return false;
-        }
-
+        
+        if (this.suffixes == null) return false;
+        
         do {
-            if (this.suffixes.contains(domain)) {
-                return true;
-            }
+            if (this.suffixes.contains(domain)) return true;
             // patterns
-            if (domain.startsWith("*.")) {
-                domain = domain.substring(2);
-            }
-            final int nextdot = domain.indexOf('.');
-            if (nextdot == -1) {
-                break;
-            }
+            if (domain.startsWith("*.")) domain = domain.substring(2);
+            int nextdot = domain.indexOf('.');
+            if (nextdot == -1) break;
             domain = "*" + domain.substring(nextdot);
-        } while (!domain.isEmpty());
-
+        } while (domain.length() > 0);
+        
         return false;
     }
 }

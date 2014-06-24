@@ -27,42 +27,41 @@
 
 package org.apache.http.conn.ssl;
 
-import java.io.IOException;
-import java.security.cert.X509Certificate;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
+import java.io.IOException;
+import java.security.cert.X509Certificate;
 
 /**
  * Interface for checking if a hostname matches the names stored inside the
- * server's X.509 certificate.  This interface extends
- * {@link javax.net.ssl.HostnameVerifier}, but it is recommended to use
+ * server's X.509 certificate.  This interface extends 
+ * {@link javax.net.ssl.HostnameVerifier}, but it is recommended to use 
  * methods added by X509HostnameVerifier.
  *
  * @since 4.0
  */
 public interface X509HostnameVerifier extends HostnameVerifier {
 
-    /**
-     * Verifies that the host name is an acceptable match with the server's
-     * authentication scheme based on the given {@link SSLSocket}.
-     *
-     * @param host the host.
-     * @param ssl the SSL socket.
-     * @throws IOException if an I/O error occurs or the verification process
-     *   fails.
-     */
+	/**
+	 * Verifies that the host name is an acceptable match with the server's 
+	 * authentication scheme based on the given {@link SSLSocket}.
+	 *   
+	 * @param host the host.
+	 * @param ssl the SSL socket.
+	 * @throws IOException if an I/O error occurs or the verification process
+	 *   fails. 
+	 */
     void verify(String host, SSLSocket ssl) throws IOException;
 
-    /**
-     * Verifies that the host name is an acceptable match with the server's
-     * authentication scheme based on the given {@link X509Certificate}.
-     *
-     * @param host the host.
-     * @param cert the certificate.
-     * @throws SSLException if the verification process fails.
-     */
+	/**
+	 * Verifies that the host name is an acceptable match with the server's 
+	 * authentication scheme based on the given {@link X509Certificate}.
+	 *   
+	 * @param host the host.
+	 * @param cert the certificate.
+	 * @throws SSLException if the verification process fails. 
+	 */
     void verify(String host, X509Certificate cert) throws SSLException;
 
     /**
@@ -77,7 +76,7 @@ public interface X509HostnameVerifier extends HostnameVerifier {
      * @param subjectAlts Subject-Alt fields of type 2 ("DNS"), as extracted
      *                    from the X.509 certificate.
      * @param host        The hostname to verify.
-     * @throws SSLException if the verification process fails.
+	 * @throws SSLException if the verification process fails. 
      */
     void verify(String host, String[] cns, String[] subjectAlts)
           throws SSLException;

@@ -27,37 +27,39 @@
 
 package org.apache.http.client.methods;
 
-import org.apache.http.conn.ClientConnectionRequest;
-import org.apache.http.conn.ConnectionReleaseTrigger;
-
 import java.io.IOException;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.ClientConnectionRequest;
+import org.apache.http.conn.ConnectionReleaseTrigger;
+import org.apache.http.conn.ManagedClientConnection;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 
 /**
- * Interface representing an HTTP request that can be aborted by shutting
+ * Interface representing an HTTP request that can be aborted by shutting 
  * down the underlying HTTP connection.
  *
- * @since 4.0
  *
- * @deprecated (4.3) use {@link HttpExecutionAware}
+ * <!-- empty lines to avoid svn diff problems -->
+ * @since 4.0
  */
-@Deprecated
 public interface AbortableHttpRequest {
 
     /**
-     * Sets the {@link org.apache.http.conn.ClientConnectionRequest}
-     * callback that can be used to abort a long-lived request for a connection.
+     * Sets the {@link ClientConnectionRequest} callback that can be
+     * used to abort a long-lived request for a connection.
      * If the request is already aborted, throws an {@link IOException}.
-     *
-     * @see org.apache.http.conn.ClientConnectionManager
+     * 
+     * @see ClientConnectionManager
+     * @see ThreadSafeClientConnManager
      */
     void setConnectionRequest(ClientConnectionRequest connRequest) throws IOException;
-
+    
     /**
      * Sets the {@link ConnectionReleaseTrigger} callback that can
      * be used to abort an active connection.
-     * Typically, this will be the
-     *   {@link org.apache.http.conn.ManagedClientConnection} itself.
+     * Typically, this will be the {@link ManagedClientConnection} itself.
      * If the request is already aborted, throws an {@link IOException}.
      */
     void setReleaseTrigger(ConnectionReleaseTrigger releaseTrigger) throws IOException;
@@ -67,13 +69,13 @@ public interface AbortableHttpRequest {
      * return immediately. If the request has not started, it will abort after
      * the next execution. Aborting this request will cause all subsequent
      * executions with this request to fail.
-     *
-     * @see org.apache.http.client.HttpClient#execute(HttpUriRequest)
-     * @see org.apache.http.client.HttpClient#execute(org.apache.http.HttpHost,
+     * 
+     * @see HttpClient#execute(HttpUriRequest)
+     * @see HttpClient#execute(org.apache.http.HttpHost,
      *      org.apache.http.HttpRequest)
-     * @see org.apache.http.client.HttpClient#execute(HttpUriRequest,
+     * @see HttpClient#execute(HttpUriRequest,
      *      org.apache.http.protocol.HttpContext)
-     * @see org.apache.http.client.HttpClient#execute(org.apache.http.HttpHost,
+     * @see HttpClient#execute(org.apache.http.HttpHost,
      *      org.apache.http.HttpRequest, org.apache.http.protocol.HttpContext)
      */
     void abort();

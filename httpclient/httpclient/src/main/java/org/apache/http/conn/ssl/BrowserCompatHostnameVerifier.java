@@ -37,34 +37,26 @@ import org.apache.http.annotation.Immutable;
  * The hostname must match either the first CN, or any of the subject-alts.
  * A wildcard can occur in the CN, and in any of the subject-alts.
  * <p/>
- * The only difference between BROWSER_COMPATIBLE and STRICT is that a wildcard
- * (such as "*.foo.com") with BROWSER_COMPATIBLE matches all subdomains,
+ * The only difference between BROWSER_COMPATIBLE and STRICT is that a wildcard 
+ * (such as "*.foo.com") with BROWSER_COMPATIBLE matches all subdomains, 
  * including "a.b.foo.com".
- *
+ * 
  *
  * @since 4.0
  */
 @Immutable
 public class BrowserCompatHostnameVerifier extends AbstractVerifier {
 
-    public static final BrowserCompatHostnameVerifier INSTANCE = new BrowserCompatHostnameVerifier();
-
-    @Override
     public final void verify(
-            final String host,
+            final String host, 
             final String[] cns,
             final String[] subjectAlts) throws SSLException {
         verify(host, cns, subjectAlts, false);
     }
 
     @Override
-    boolean validCountryWildcard(final String cn) {
-        return true;
+    public final String toString() { 
+        return "BROWSER_COMPATIBLE"; 
     }
-
-    @Override
-    public final String toString() {
-        return "BROWSER_COMPATIBLE";
-    }
-
+    
 }

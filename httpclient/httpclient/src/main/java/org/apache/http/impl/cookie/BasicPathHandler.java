@@ -23,18 +23,16 @@
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  *
- */
+ */ 
 package org.apache.http.impl.cookie;
 
 import org.apache.http.annotation.Immutable;
+
 import org.apache.http.cookie.Cookie;
 import org.apache.http.cookie.CookieAttributeHandler;
 import org.apache.http.cookie.CookieOrigin;
-import org.apache.http.cookie.CookieRestrictionViolationException;
 import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.cookie.SetCookie;
-import org.apache.http.util.Args;
-import org.apache.http.util.TextUtils;
 
 /**
  *
@@ -46,29 +44,35 @@ public class BasicPathHandler implements CookieAttributeHandler {
     public BasicPathHandler() {
         super();
     }
-
-    @Override
-    public void parse(
-            final SetCookie cookie, final String value) throws MalformedCookieException {
-        Args.notNull(cookie, "Cookie");
-        cookie.setPath(!TextUtils.isBlank(value) ? value : "/");
+    
+    public void parse(final SetCookie cookie, String value) 
+            throws MalformedCookieException {
+        if (cookie == null) {
+            throw new IllegalArgumentException("Cookie may not be null");
+        }
+        if (value == null || value.trim().length() == 0) {
+            value = "/";
+        }
+        cookie.setPath(value);
     }
 
-    @Override
-    public void validate(final Cookie cookie, final CookieOrigin origin)
+    public void validate(final Cookie cookie, final CookieOrigin origin) 
             throws MalformedCookieException {
         if (!match(cookie, origin)) {
-            throw new CookieRestrictionViolationException(
-                "Illegal path attribute \"" + cookie.getPath()
+            throw new MalformedCookieException(
+                "Illegal path attribute \"" + cookie.getPath() 
                 + "\". Path of origin: \"" + origin.getPath() + "\"");
         }
     }
-
-    @Override
+    
     public boolean match(final Cookie cookie, final CookieOrigin origin) {
-        Args.notNull(cookie, "Cookie");
-        Args.notNull(origin, "Cookie origin");
-        final String targetpath = origin.getPath();
+        if (cookie == null) {
+            throw new IllegalArgumentException("Cookie may not be null");
+        }
+        if (origin == null) {
+            throw new IllegalArgumentException("Cookie origin may not be null");
+        }
+        String targetpath = origin.getPath();
         String topmostPath = cookie.getPath();
         if (topmostPath == null) {
             topmostPath = "/";
@@ -86,5 +90,5 @@ public class BasicPathHandler implements CookieAttributeHandler {
         }
         return match;
     }
-
+    
 }

@@ -23,16 +23,14 @@
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  *
- */
+ */ 
 package org.apache.http.impl.cookie;
 
-import java.util.Date;
-
 import org.apache.http.annotation.Immutable;
-import org.apache.http.client.utils.DateUtils;
+
 import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.cookie.SetCookie;
-import org.apache.http.util.Args;
+
 
 /**
  *
@@ -45,23 +43,26 @@ public class BasicExpiresHandler extends AbstractCookieAttributeHandler {
     private final String[] datepatterns;
 
     public BasicExpiresHandler(final String[] datepatterns) {
-        Args.notNull(datepatterns, "Array of date patterns");
+        if (datepatterns == null) {
+            throw new IllegalArgumentException("Array of date patterns may not be null");
+        }
         this.datepatterns = datepatterns;
     }
 
-    @Override
-    public void parse(final SetCookie cookie, final String value)
+    public void parse(final SetCookie cookie, final String value) 
             throws MalformedCookieException {
-        Args.notNull(cookie, "Cookie");
+        if (cookie == null) {
+            throw new IllegalArgumentException("Cookie may not be null");
+        }
         if (value == null) {
             throw new MalformedCookieException("Missing value for expires attribute");
         }
-        final Date expiry = DateUtils.parseDate(value, this.datepatterns);
-        if (expiry == null) {
-            throw new MalformedCookieException("Unable to parse expires attribute: "
-                    + value);
+        try {
+            cookie.setExpiryDate(DateUtils.parseDate(value, this.datepatterns));
+        } catch (DateParseException dpe) {
+            throw new MalformedCookieException("Unable to parse expires attribute: " 
+                + value);
         }
-        cookie.setExpiryDate(expiry);
     }
 
 }

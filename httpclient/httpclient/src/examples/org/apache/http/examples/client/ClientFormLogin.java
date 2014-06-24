@@ -1,21 +1,20 @@
 /*
  * ====================================================================
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  * ====================================================================
  *
  * This software consists of voluntary contributions made by many
@@ -24,21 +23,21 @@
  * <http://www.apache.org/>.
  *
  */
+
 package org.apache.http.examples.client;
 
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
 
 /**
  * A example that demonstrates how HttpClient APIs can be used to perform
@@ -47,58 +46,60 @@ import org.apache.http.util.EntityUtils;
 public class ClientFormLogin {
 
     public static void main(String[] args) throws Exception {
-        BasicCookieStore cookieStore = new BasicCookieStore();
-        CloseableHttpClient httpclient = HttpClients.custom()
-                .setDefaultCookieStore(cookieStore)
-                .build();
-        try {
-            HttpGet httpget = new HttpGet("https://someportal/");
-            CloseableHttpResponse response1 = httpclient.execute(httpget);
-            try {
-                HttpEntity entity = response1.getEntity();
 
-                System.out.println("Login form get: " + response1.getStatusLine());
-                EntityUtils.consume(entity);
+        DefaultHttpClient httpclient = new DefaultHttpClient();
 
-                System.out.println("Initial set of cookies:");
-                List<Cookie> cookies = cookieStore.getCookies();
-                if (cookies.isEmpty()) {
-                    System.out.println("None");
-                } else {
-                    for (int i = 0; i < cookies.size(); i++) {
-                        System.out.println("- " + cookies.get(i).toString());
-                    }
-                }
-            } finally {
-                response1.close();
-            }
+        HttpGet httpget = new HttpGet("https://portal.sun.com/portal/dt");
 
-            HttpUriRequest login = RequestBuilder.post()
-                    .setUri(new URI("https://someportal/"))
-                    .addParameter("IDToken1", "username")
-                    .addParameter("IDToken2", "password")
-                    .build();
-            CloseableHttpResponse response2 = httpclient.execute(login);
-            try {
-                HttpEntity entity = response2.getEntity();
+        HttpResponse response = httpclient.execute(httpget);
+        HttpEntity entity = response.getEntity();
 
-                System.out.println("Login form get: " + response2.getStatusLine());
-                EntityUtils.consume(entity);
-
-                System.out.println("Post logon cookies:");
-                List<Cookie> cookies = cookieStore.getCookies();
-                if (cookies.isEmpty()) {
-                    System.out.println("None");
-                } else {
-                    for (int i = 0; i < cookies.size(); i++) {
-                        System.out.println("- " + cookies.get(i).toString());
-                    }
-                }
-            } finally {
-                response2.close();
-            }
-        } finally {
-            httpclient.close();
+        System.out.println("Login form get: " + response.getStatusLine());
+        if (entity != null) {
+            entity.consumeContent();
         }
+        System.out.println("Initial set of cookies:");
+        List<Cookie> cookies = httpclient.getCookieStore().getCookies();
+        if (cookies.isEmpty()) {
+            System.out.println("None");
+        } else {
+            for (int i = 0; i < cookies.size(); i++) {
+                System.out.println("- " + cookies.get(i).toString());
+            }
+        }
+
+        HttpPost httpost = new HttpPost("https://portal.sun.com/amserver/UI/Login?" +
+                "org=self_registered_users&" +
+                "goto=/portal/dt&" +
+                "gotoOnFail=/portal/dt?error=true");
+
+        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
+        nvps.add(new BasicNameValuePair("IDToken1", "username"));
+        nvps.add(new BasicNameValuePair("IDToken2", "password"));
+
+        httpost.setEntity(new UrlEncodedFormEntity(nvps, HTTP.UTF_8));
+
+        response = httpclient.execute(httpost);
+        entity = response.getEntity();
+
+        System.out.println("Login form get: " + response.getStatusLine());
+        if (entity != null) {
+            entity.consumeContent();
+        }
+
+        System.out.println("Post logon cookies:");
+        cookies = httpclient.getCookieStore().getCookies();
+        if (cookies.isEmpty()) {
+            System.out.println("None");
+        } else {
+            for (int i = 0; i < cookies.size(); i++) {
+                System.out.println("- " + cookies.get(i).toString());
+            }
+        }
+
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpclient.getConnectionManager().shutdown();        
     }
 }

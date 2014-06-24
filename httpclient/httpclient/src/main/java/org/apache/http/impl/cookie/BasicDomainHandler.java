@@ -23,17 +23,16 @@
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  *
- */
+ */ 
 package org.apache.http.impl.cookie;
 
 import org.apache.http.annotation.Immutable;
+
 import org.apache.http.cookie.Cookie;
 import org.apache.http.cookie.CookieAttributeHandler;
 import org.apache.http.cookie.CookieOrigin;
-import org.apache.http.cookie.CookieRestrictionViolationException;
 import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.cookie.SetCookie;
-import org.apache.http.util.Args;
 
 /**
  *
@@ -45,34 +44,38 @@ public class BasicDomainHandler implements CookieAttributeHandler {
     public BasicDomainHandler() {
         super();
     }
-
-    @Override
-    public void parse(final SetCookie cookie, final String value)
+    
+    public void parse(final SetCookie cookie, final String value) 
             throws MalformedCookieException {
-        Args.notNull(cookie, "Cookie");
+        if (cookie == null) {
+            throw new IllegalArgumentException("Cookie may not be null");
+        }
         if (value == null) {
             throw new MalformedCookieException("Missing value for domain attribute");
         }
-        if (value.trim().isEmpty()) {
+        if (value.trim().length() == 0) {
             throw new MalformedCookieException("Blank value for domain attribute");
         }
         cookie.setDomain(value);
     }
 
-    @Override
-    public void validate(final Cookie cookie, final CookieOrigin origin)
+    public void validate(final Cookie cookie, final CookieOrigin origin) 
             throws MalformedCookieException {
-        Args.notNull(cookie, "Cookie");
-        Args.notNull(origin, "Cookie origin");
-        // Validate the cookies domain attribute.  NOTE:  Domains without
-        // any dots are allowed to support hosts on private LANs that don't
-        // have DNS names.  Since they have no dots, to domain-match the
-        // request-host and domain must be identical for the cookie to sent
+        if (cookie == null) {
+            throw new IllegalArgumentException("Cookie may not be null");
+        }
+        if (origin == null) {
+            throw new IllegalArgumentException("Cookie origin may not be null");
+        }
+        // Validate the cookies domain attribute.  NOTE:  Domains without 
+        // any dots are allowed to support hosts on private LANs that don't 
+        // have DNS names.  Since they have no dots, to domain-match the 
+        // request-host and domain must be identical for the cookie to sent 
         // back to the origin-server.
-        final String host = origin.getHost();
+        String host = origin.getHost();
         String domain = cookie.getDomain();
         if (domain == null) {
-            throw new CookieRestrictionViolationException("Cookie domain may not be null");
+            throw new MalformedCookieException("Cookie domain may not be null");
         }
         if (host.contains(".")) {
             // Not required to have at least two dots.  RFC 2965.
@@ -83,26 +86,29 @@ public class BasicDomainHandler implements CookieAttributeHandler {
                 if (domain.startsWith(".")) {
                     domain = domain.substring(1, domain.length());
                 }
-                if (!host.equals(domain)) {
-                    throw new CookieRestrictionViolationException(
-                        "Illegal domain attribute \"" + domain
+                if (!host.equals(domain)) { 
+                    throw new MalformedCookieException(
+                        "Illegal domain attribute \"" + domain 
                         + "\". Domain of origin: \"" + host + "\"");
                 }
             }
         } else {
             if (!host.equals(domain)) {
-                throw new CookieRestrictionViolationException(
-                    "Illegal domain attribute \"" + domain
+                throw new MalformedCookieException(
+                    "Illegal domain attribute \"" + domain 
                     + "\". Domain of origin: \"" + host + "\"");
             }
         }
     }
-
-    @Override
+    
     public boolean match(final Cookie cookie, final CookieOrigin origin) {
-        Args.notNull(cookie, "Cookie");
-        Args.notNull(origin, "Cookie origin");
-        final String host = origin.getHost();
+        if (cookie == null) {
+            throw new IllegalArgumentException("Cookie may not be null");
+        }
+        if (origin == null) {
+            throw new IllegalArgumentException("Cookie origin may not be null");
+        }
+        String host = origin.getHost();
         String domain = cookie.getDomain();
         if (domain == null) {
             return false;
@@ -115,5 +121,5 @@ public class BasicDomainHandler implements CookieAttributeHandler {
         }
         return host.endsWith(domain) || host.equals(domain.substring(1));
     }
-
+    
 }

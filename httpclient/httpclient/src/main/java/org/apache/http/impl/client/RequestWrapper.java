@@ -30,16 +30,16 @@ package org.apache.http.impl.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.http.annotation.NotThreadSafe;
+
 import org.apache.http.HttpRequest;
 import org.apache.http.ProtocolException;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.RequestLine;
-import org.apache.http.annotation.NotThreadSafe;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicRequestLine;
 import org.apache.http.params.HttpProtocolParams;
-import org.apache.http.util.Args;
 
 /**
  * A wrapper class for {@link HttpRequest}s that can be used to change
@@ -49,38 +49,37 @@ import org.apache.http.util.Args;
  * This class is also capable of resetting the request headers to
  * the state of the original request.
  *
- * @since 4.0
  *
- * @deprecated (4.3) do not use.
+ * @since 4.0
  */
 @NotThreadSafe
-@Deprecated
 public class RequestWrapper extends AbstractHttpMessage implements HttpUriRequest {
-
+    
     private final HttpRequest original;
 
     private URI uri;
     private String method;
     private ProtocolVersion version;
     private int execCount;
-
+    
     public RequestWrapper(final HttpRequest request) throws ProtocolException {
         super();
-        Args.notNull(request, "HTTP request");
+        if (request == null) {
+            throw new IllegalArgumentException("HTTP request may not be null");
+        }
         this.original = request;
         setParams(request.getParams());
-        setHeaders(request.getAllHeaders());
-        // Make a copy of the original URI
+        // Make a copy of the original URI 
         if (request instanceof HttpUriRequest) {
             this.uri = ((HttpUriRequest) request).getURI();
             this.method = ((HttpUriRequest) request).getMethod();
             this.version = null;
         } else {
-            final RequestLine requestLine = request.getRequestLine();
+            RequestLine requestLine = request.getRequestLine();
             try {
                 this.uri = new URI(requestLine.getUri());
-            } catch (final URISyntaxException ex) {
-                throw new ProtocolException("Invalid request URI: "
+            } catch (URISyntaxException ex) {
+                throw new ProtocolException("Invalid request URI: " 
                         + requestLine.getUri(), ex);
             }
             this.method = requestLine.getMethod();
@@ -94,18 +93,18 @@ public class RequestWrapper extends AbstractHttpMessage implements HttpUriReques
         this.headergroup.clear();
         setHeaders(this.original.getAllHeaders());
     }
-
-    @Override
+    
     public String getMethod() {
         return this.method;
     }
 
     public void setMethod(final String method) {
-        Args.notNull(method, "Method name");
+        if (method == null) {
+            throw new IllegalArgumentException("Method name may not be null");
+        }
         this.method = method;
     }
 
-    @Override
     public ProtocolVersion getProtocolVersion() {
         if (this.version == null) {
             this.version = HttpProtocolParams.getVersion(getParams());
@@ -118,34 +117,31 @@ public class RequestWrapper extends AbstractHttpMessage implements HttpUriReques
     }
 
 
-    @Override
     public URI getURI() {
         return this.uri;
     }
-
+    
     public void setURI(final URI uri) {
         this.uri = uri;
     }
 
-    @Override
     public RequestLine getRequestLine() {
-        final ProtocolVersion ver = getProtocolVersion();
+        String method = getMethod();
+        ProtocolVersion ver = getProtocolVersion();
         String uritext = null;
         if (uri != null) {
             uritext = uri.toASCIIString();
         }
-        if (uritext == null || uritext.isEmpty()) {
+        if (uritext == null || uritext.length() == 0) {
             uritext = "/";
         }
-        return new BasicRequestLine(getMethod(), uritext, ver);
+        return new BasicRequestLine(method, uritext, ver);
     }
 
-    @Override
     public void abort() throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public boolean isAborted() {
         return false;
     }
@@ -153,7 +149,7 @@ public class RequestWrapper extends AbstractHttpMessage implements HttpUriReques
     public HttpRequest getOriginal() {
         return this.original;
     }
-
+    
     public boolean isRepeatable() {
         return true;
     }
@@ -161,9 +157,9 @@ public class RequestWrapper extends AbstractHttpMessage implements HttpUriReques
     public int getExecCount() {
         return this.execCount;
     }
-
+    
     public void incrementExecCount() {
         this.execCount++;
     }
-
+    
 }

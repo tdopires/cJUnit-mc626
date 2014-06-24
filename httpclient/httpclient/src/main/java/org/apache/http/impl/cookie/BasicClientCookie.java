@@ -34,9 +34,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.http.annotation.NotThreadSafe;
+
 import org.apache.http.cookie.ClientCookie;
 import org.apache.http.cookie.SetCookie;
-import org.apache.http.util.Args;
 
 /**
  * Default implementation of {@link SetCookie}.
@@ -50,13 +50,15 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
 
     /**
      * Default Constructor taking a name and a value. The value may be null.
-     *
+     * 
      * @param name The name.
      * @param value The value.
      */
     public BasicClientCookie(final String name, final String value) {
         super();
-        Args.notNull(name, "Name");
+        if (name == null) {
+            throw new IllegalArgumentException("Name may not be null");
+        }
         this.name = name;
         this.attribs = new HashMap<String, String>();
         this.value = value;
@@ -67,7 +69,6 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
      *
      * @return String name The name
      */
-    @Override
     public String getName() {
         return this.name;
     }
@@ -77,30 +78,27 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
      *
      * @return String value The current value.
      */
-    @Override
     public String getValue() {
         return this.value;
     }
 
     /**
      * Sets the value
-     *
+     * 
      * @param value
      */
-    @Override
     public void setValue(final String value) {
         this.value = value;
     }
 
     /**
      * Returns the comment describing the purpose of this cookie, or
-     * {@code null} if no such comment has been defined.
-     *
-     * @return comment
+     * <tt>null</tt> if no such comment has been defined.
+     * 
+     * @return comment 
      *
      * @see #setComment(String)
      */
-    @Override
     public String getComment() {
         return cookieComment;
     }
@@ -108,38 +106,35 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
     /**
      * If a user agent (web browser) presents this cookie to a user, the
      * cookie's purpose will be described using this comment.
-     *
+     * 
      * @param comment
-     *
+     *  
      * @see #getComment()
      */
-    @Override
-    public void setComment(final String comment) {
+    public void setComment(String comment) {
         cookieComment = comment;
     }
 
-
+    
     /**
      * Returns null. Cookies prior to RFC2965 do not set this attribute
      */
-    @Override
     public String getCommentURL() {
         return null;
     }
 
-
+    
     /**
-     * Returns the expiration {@link Date} of the cookie, or {@code null}
+     * Returns the expiration {@link Date} of the cookie, or <tt>null</tt>
      * if none exists.
-     * <p><strong>Note:</strong> the object returned by this method is
+     * <p><strong>Note:</strong> the object returned by this method is 
      * considered immutable. Changing it (e.g. using setTime()) could result
      * in undefined behaviour. Do so at your peril. </p>
-     * @return Expiration {@link Date}, or {@code null}.
+     * @return Expiration {@link Date}, or <tt>null</tt>.
      *
      * @see #setExpiryDate(java.util.Date)
      *
      */
-    @Override
     public Date getExpiryDate() {
         return cookieExpiryDate;
     }
@@ -147,7 +142,7 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
     /**
      * Sets expiration date.
      * <p><strong>Note:</strong> the object returned by this method is considered
-     * immutable. Changing it (e.g. using setTime()) could result in undefined
+     * immutable. Changing it (e.g. using setTime()) could result in undefined 
      * behaviour. Do so at your peril.</p>
      *
      * @param expiryDate the {@link Date} after which this cookie is no longer valid.
@@ -155,20 +150,18 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
      * @see #getExpiryDate
      *
      */
-    @Override
-    public void setExpiryDate (final Date expiryDate) {
+    public void setExpiryDate (Date expiryDate) {
         cookieExpiryDate = expiryDate;
     }
 
 
     /**
-     * Returns {@code false} if the cookie should be discarded at the end
-     * of the "session"; {@code true} otherwise.
+     * Returns <tt>false</tt> if the cookie should be discarded at the end
+     * of the "session"; <tt>true</tt> otherwise.
      *
-     * @return {@code false} if the cookie should be discarded at the end
-     *         of the "session"; {@code true} otherwise
+     * @return <tt>false</tt> if the cookie should be discarded at the end
+     *         of the "session"; <tt>true</tt> otherwise
      */
-    @Override
     public boolean isPersistent() {
         return (null != cookieExpiryDate);
     }
@@ -176,27 +169,25 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
 
     /**
      * Returns domain attribute of the cookie.
-     *
+     * 
      * @return the value of the domain attribute
      *
      * @see #setDomain(java.lang.String)
      */
-    @Override
     public String getDomain() {
         return cookieDomain;
     }
 
     /**
      * Sets the domain attribute.
-     *
+     * 
      * @param domain The value of the domain attribute
      *
      * @see #getDomain
      */
-    @Override
-    public void setDomain(final String domain) {
+    public void setDomain(String domain) {
         if (domain != null) {
-            cookieDomain = domain.toLowerCase(Locale.ROOT);
+            cookieDomain = domain.toLowerCase(Locale.ENGLISH);
         } else {
             cookieDomain = null;
         }
@@ -205,12 +196,11 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
 
     /**
      * Returns the path attribute of the cookie
-     *
+     * 
      * @return The value of the path attribute.
-     *
+     * 
      * @see #setPath(java.lang.String)
      */
-    @Override
     public String getPath() {
         return cookiePath;
     }
@@ -223,8 +213,7 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
      * @see #getPath
      *
      */
-    @Override
-    public void setPath(final String path) {
+    public void setPath(String path) {
         cookiePath = path;
     }
 
@@ -232,7 +221,6 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
      * @return <code>true</code> if this cookie should only be sent over secure connections.
      * @see #setSecure(boolean)
      */
-    @Override
     public boolean isSecure() {
         return isSecure;
     }
@@ -240,17 +228,16 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
     /**
      * Sets the secure attribute of the cookie.
      * <p>
-     * When {@code true} the cookie should only be sent
+     * When <tt>true</tt> the cookie should only be sent
      * using a secure protocol (https).  This should only be set when
      * the cookie's originating server used a secure protocol to set the
      * cookie's value.
      *
      * @param secure The value of the secure attribute
-     *
+     * 
      * @see #isSecure()
      */
-    @Override
-    public void setSecure (final boolean secure) {
+    public void setSecure (boolean secure) {
         isSecure = secure;
     }
 
@@ -258,76 +245,72 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
     /**
      * Returns null. Cookies prior to RFC2965 do not set this attribute
      */
-    @Override
     public int[] getPorts() {
         return null;
     }
 
-
+    
     /**
      * Returns the version of the cookie specification to which this
      * cookie conforms.
      *
      * @return the version of the cookie.
-     *
+     * 
      * @see #setVersion(int)
      *
      */
-    @Override
     public int getVersion() {
         return cookieVersion;
     }
 
     /**
      * Sets the version of the cookie specification to which this
-     * cookie conforms.
+     * cookie conforms. 
      *
      * @param version the version of the cookie.
-     *
+     * 
      * @see #getVersion
      */
-    @Override
-    public void setVersion(final int version) {
+    public void setVersion(int version) {
         cookieVersion = version;
     }
 
     /**
      * Returns true if this cookie has expired.
      * @param date Current time
-     *
-     * @return {@code true} if the cookie has expired.
+     * 
+     * @return <tt>true</tt> if the cookie has expired.
      */
-    @Override
     public boolean isExpired(final Date date) {
-        Args.notNull(date, "Date");
-        return (cookieExpiryDate != null
+        if (date == null) {
+            throw new IllegalArgumentException("Date may not be null");
+        }
+        return (cookieExpiryDate != null  
             && cookieExpiryDate.getTime() <= date.getTime());
     }
 
     public void setAttribute(final String name, final String value) {
         this.attribs.put(name, value);
     }
-
-    @Override
+    
     public String getAttribute(final String name) {
         return this.attribs.get(name);
     }
 
-    @Override
     public boolean containsAttribute(final String name) {
         return this.attribs.get(name) != null;
     }
-
+    
     @Override
     public Object clone() throws CloneNotSupportedException {
-        final BasicClientCookie clone = (BasicClientCookie) super.clone();
+        BasicClientCookie clone = (BasicClientCookie) super.clone();
         clone.attribs = new HashMap<String, String>(this.attribs);
         return clone;
     }
 
     @Override
     public String toString() {
-        final StringBuilder buffer = new StringBuilder();
+        StringBuilder buffer = new StringBuilder();
         buffer.append("[version: ");
         buffer.append(Integer.toString(this.cookieVersion));
         buffer.append("]");
@@ -348,7 +331,7 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
         buffer.append("]");
         return buffer.toString();
     }
-
+    
    // ----------------------------------------------------- Instance Variables
 
     /** Cookie name */
@@ -356,7 +339,7 @@ public class BasicClientCookie implements SetCookie, ClientCookie, Cloneable, Se
 
     /** Cookie attributes as specified by the origin server */
     private Map<String, String> attribs;
-
+   
     /** Cookie value */
     private String value;
 

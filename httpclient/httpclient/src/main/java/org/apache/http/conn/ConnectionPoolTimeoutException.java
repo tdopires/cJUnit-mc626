@@ -30,10 +30,10 @@ package org.apache.http.conn;
 import org.apache.http.annotation.Immutable;
 
 /**
- * A timeout while waiting for an available connection
+ * A timeout while waiting for an available connection 
  * from a connection manager.
- *
- *
+ * 
+ * 
  * @since 4.0
  */
 @Immutable
@@ -42,7 +42,7 @@ public class ConnectionPoolTimeoutException extends ConnectTimeoutException {
     private static final long serialVersionUID = -7898874842020245128L;
 
     /**
-     * Creates a ConnectTimeoutException with a {@code null} detail message.
+     * Creates a ConnectTimeoutException with a <tt>null</tt> detail message.
      */
     public ConnectionPoolTimeoutException() {
         super();
@@ -50,10 +50,10 @@ public class ConnectionPoolTimeoutException extends ConnectTimeoutException {
 
     /**
      * Creates a ConnectTimeoutException with the specified detail message.
-     *
-     * @param message The exception detail message
+     * 
+     * @param message The exception detail message 
      */
-    public ConnectionPoolTimeoutException(final String message) {
+    public ConnectionPoolTimeoutException(String message) {
         super(message);
     }
 

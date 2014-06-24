@@ -35,7 +35,7 @@ import org.apache.http.annotation.Immutable;
 /**
  * This cookie comparator can be used to compare identity of cookies.
  * <p>
- *  Cookies are considered identical if their names are equal and
+ *  Cookies are considered identical if their names are equal and 
  *  their domain attributes match ignoring case.
  *
  * @since 4.0
@@ -45,11 +45,10 @@ public class CookieIdentityComparator implements Serializable, Comparator<Cookie
 
     private static final long serialVersionUID = 4466565437490631532L;
 
-    @Override
     public int compare(final Cookie c1, final Cookie c2) {
         int res = c1.getName().compareTo(c2.getName());
         if (res == 0) {
-            // do not differentiate empty and null domains
+            // do not differentiate empty and null domains 
             String d1 = c1.getDomain();
             if (d1 == null) {
                 d1 = "";

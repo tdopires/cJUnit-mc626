@@ -29,12 +29,11 @@ package org.apache.http.cookie;
 import java.util.Locale;
 
 import org.apache.http.annotation.Immutable;
-import org.apache.http.util.Args;
 
 /**
- * CookieOrigin class encapsulates details of an origin server that
+ * CookieOrigin class encapsulates details of an origin server that 
  * are relevant when parsing, validating or matching HTTP cookies.
- *
+ * 
  * @since 4.0
  */
 @Immutable
@@ -44,15 +43,27 @@ public final class CookieOrigin {
     private final int port;
     private final String path;
     private final boolean secure;
-
-    public CookieOrigin(final String host, final int port, final String path, final boolean secure) {
+    
+    public CookieOrigin(final String host, int port, final String path, boolean secure) {
         super();
-        Args.notBlank(host, "Host");
-        Args.notNegative(port, "Port");
-        Args.notNull(path, "Path");
-        this.host = host.toLowerCase(Locale.ROOT);
+        if (host == null) {
+            throw new IllegalArgumentException(
+                    "Host of origin may not be null");
+        }
+        if (host.trim().length() == 0) {
+            throw new IllegalArgumentException(
+                    "Host of origin may not be blank");
+        }
+        if (port < 0) {
+            throw new IllegalArgumentException("Invalid port: " + port);
+        }
+        if (path == null) {
+            throw new IllegalArgumentException(
+                    "Path of origin may not be null.");
+        }
+        this.host = host.toLowerCase(Locale.ENGLISH);
         this.port = port;
-        if (!path.trim().isEmpty()) {
+        if (path.trim().length() != 0) {
             this.path = path;
         } else {
             this.path = "/";
@@ -78,7 +89,7 @@ public final class CookieOrigin {
 
     @Override
     public String toString() {
-        final StringBuilder buffer = new StringBuilder();
+        StringBuilder buffer = new StringBuilder();
         buffer.append('[');
         if (this.secure) {
             buffer.append("(secure)");
@@ -90,5 +101,5 @@ public final class CookieOrigin {
         buffer.append(']');
         return buffer.toString();
     }
-
+    
 }

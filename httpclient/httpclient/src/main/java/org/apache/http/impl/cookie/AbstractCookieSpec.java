@@ -23,7 +23,7 @@
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  *
- */
+ */ 
 
 package org.apache.http.impl.cookie;
 
@@ -32,53 +32,57 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.annotation.NotThreadSafe;
+
 import org.apache.http.cookie.CookieAttributeHandler;
 import org.apache.http.cookie.CookieSpec;
-import org.apache.http.util.Args;
 
 /**
  * Abstract cookie specification which can delegate the job of parsing,
- * validation or matching cookie attributes to a number of arbitrary
+ * validation or matching cookie attributes to a number of arbitrary 
  * {@link CookieAttributeHandler}s.
- *
- *
- * @since 4.0
+ * 
+ * 
+ * @since 4.0 
  */
 @NotThreadSafe // HashMap is not thread-safe
 public abstract class AbstractCookieSpec implements CookieSpec {
-
+    
     /**
     * Stores attribute name -> attribute handler mappings
     */
     private final Map<String, CookieAttributeHandler> attribHandlerMap;
 
-    /**
-     * Default constructor
+    /** 
+     * Default constructor 
      * */
     public AbstractCookieSpec() {
         super();
-        this.attribHandlerMap = new HashMap<String, CookieAttributeHandler>(10);
+        this.attribHandlerMap = new HashMap<String, CookieAttributeHandler>(10);        
     }
 
     public void registerAttribHandler(
             final String name, final CookieAttributeHandler handler) {
-        Args.notNull(name, "Attribute name");
-        Args.notNull(handler, "Attribute handler");
+        if (name == null) {
+            throw new IllegalArgumentException("Attribute name may not be null");
+        }
+        if (handler == null) {
+            throw new IllegalArgumentException("Attribute handler may not be null");
+        }
         this.attribHandlerMap.put(name, handler);
     }
-
+    
     /**
      * Finds an attribute handler {@link CookieAttributeHandler} for the
-     * given attribute. Returns {@code null} if no attribute handler is
+     * given attribute. Returns <tt>null</tt> if no attribute handler is
      * found for the specified attribute.
      *
      * @param name attribute name. e.g. Domain, Path, etc.
-     * @return an attribute handler or {@code null}
+     * @return an attribute handler or <tt>null</tt>
      */
     protected CookieAttributeHandler findAttribHandler(final String name) {
         return this.attribHandlerMap.get(name);
     }
-
+    
     /**
      * Gets attribute handler {@link CookieAttributeHandler} for the
      * given attribute.
@@ -88,7 +92,7 @@ public abstract class AbstractCookieSpec implements CookieSpec {
      *          specified attribute.
      */
     protected CookieAttributeHandler getAttribHandler(final String name) {
-        final CookieAttributeHandler handler = findAttribHandler(name);
+        CookieAttributeHandler handler = findAttribHandler(name);
         if (handler == null) {
             throw new IllegalStateException("Handler not registered for " +
                                             name + " attribute.");
@@ -100,5 +104,5 @@ public abstract class AbstractCookieSpec implements CookieSpec {
     protected Collection<CookieAttributeHandler> getAttribHandlers() {
         return this.attribHandlerMap.values();
     }
-
+    
 }

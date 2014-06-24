@@ -1,8 +1,9 @@
 package org.unicamp.mc626.example;
 
+// import org.junit.Test;
 import org.junit.runner.RunWith;
-import static org.junit.Assert.*;
 
+import static org.junit.Assert.*;
 import de.fzi.cjunit.ConcurrentTest;
 import de.fzi.cjunit.runners.ConcurrentRunner;
 import de.fzi.cjunit.util.TestBarrier;

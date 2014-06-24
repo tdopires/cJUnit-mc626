@@ -1,21 +1,20 @@
 /*
  * ====================================================================
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  * ====================================================================
  *
  * This software consists of voluntary contributions made by many
@@ -24,34 +23,34 @@
  * <http://www.apache.org/>.
  *
  */
+
 package org.apache.http.auth;
 
-import java.io.Serializable;
 import java.security.Principal;
 
 import org.apache.http.annotation.Immutable;
-import org.apache.http.util.Args;
+
 import org.apache.http.util.LangUtils;
 
 /**
  * Basic user principal used for HTTP authentication
  *
+ * 
  * @since 4.0
  */
 @Immutable
-public final class BasicUserPrincipal implements Principal, Serializable {
-
-    private static final long serialVersionUID = -2266305184969850467L;
+public final class BasicUserPrincipal implements Principal {
 
     private final String username;
-
+    
     public BasicUserPrincipal(final String username) {
         super();
-        Args.notNull(username, "User name");
+        if (username == null) {
+            throw new IllegalArgumentException("User name may not be null");
+        }
         this.username = username;
     }
-
-    @Override
+    
     public String getName() {
         return this.username;
     }
@@ -64,12 +63,11 @@ public final class BasicUserPrincipal implements Principal, Serializable {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (this == o) return true;
         if (o instanceof BasicUserPrincipal) {
-            final BasicUserPrincipal that = (BasicUserPrincipal) o;
+            BasicUserPrincipal that = (BasicUserPrincipal) o;
             if (LangUtils.equals(this.username, that.username)) {
                 return true;
             }
@@ -79,7 +77,7 @@ public final class BasicUserPrincipal implements Principal, Serializable {
 
     @Override
     public String toString() {
-        final StringBuilder buffer = new StringBuilder();
+        StringBuilder buffer = new StringBuilder();
         buffer.append("[principal: ");
         buffer.append(this.username);
         buffer.append("]");

@@ -30,59 +30,45 @@ package org.apache.http.impl.cookie;
 import java.util.Collection;
 
 import org.apache.http.annotation.Immutable;
+
 import org.apache.http.cookie.CookieSpec;
 import org.apache.http.cookie.CookieSpecFactory;
-import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.cookie.params.CookieSpecPNames;
 import org.apache.http.params.HttpParams;
-import org.apache.http.protocol.HttpContext;
 
 /**
- * {@link CookieSpecProvider} implementation that creates and initializes
+ * {@link CookieSpecFactory} implementation that creates and initializes
  * {@link RFC2109Spec} instances.
+ * <p>
+ * The following parameters can be used to customize the behavior of this 
+ * class: 
+ * <ul>
+ *  <li>{@link org.apache.http.cookie.params.CookieSpecPNames#DATE_PATTERNS}</li>
+ *  <li>{@link org.apache.http.cookie.params.CookieSpecPNames#SINGLE_COOKIE_HEADER}</li>
+ * </ul>
  *
  * @since 4.0
  */
 @Immutable
-@SuppressWarnings("deprecation")
-public class RFC2109SpecFactory implements CookieSpecFactory, CookieSpecProvider {
+public class RFC2109SpecFactory implements CookieSpecFactory {    
 
-    private final String[] datepatterns;
-    private final boolean oneHeader;
-
-    public RFC2109SpecFactory(final String[] datepatterns, final boolean oneHeader) {
-        super();
-        this.datepatterns = datepatterns;
-        this.oneHeader = oneHeader;
-    }
-
-    public RFC2109SpecFactory() {
-        this(null, false);
-    }
-
-    @Override
     public CookieSpec newInstance(final HttpParams params) {
         if (params != null) {
-
-            String[] patterns = null;
-            final Collection<?> param = (Collection<?>) params.getParameter(
-                    CookieSpecPNames.DATE_PATTERNS);
-            if (param != null) {
-                patterns = new String[param.size()];
-                patterns = param.toArray(patterns);
-            }
-            final boolean singleHeader = params.getBooleanParameter(
-                    CookieSpecPNames.SINGLE_COOKIE_HEADER, false);
-
+        	
+        	String[] patterns = null;
+        	Collection<?> param = (Collection<?>) params.getParameter(
+        			CookieSpecPNames.DATE_PATTERNS);
+        	if (param != null) {
+        		patterns = new String[param.size()];
+        		patterns = param.toArray(patterns);
+        	}
+        	boolean singleHeader = params.getBooleanParameter(
+        			CookieSpecPNames.SINGLE_COOKIE_HEADER, false);        	
+        	
             return new RFC2109Spec(patterns, singleHeader);
         } else {
             return new RFC2109Spec();
         }
-    }
-
-    @Override
-    public CookieSpec create(final HttpContext context) {
-        return new RFC2109Spec(this.datepatterns, this.oneHeader);
     }
 
 }

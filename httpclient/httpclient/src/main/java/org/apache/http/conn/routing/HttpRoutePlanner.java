@@ -36,15 +36,15 @@ import org.apache.http.protocol.HttpContext;
  * Encapsulates logic to compute a {@link HttpRoute} to a target host.
  * Implementations may for example be based on parameters, or on the
  * standard Java system properties.
- * <p/>
+ * <p>
  * Implementations of this interface must be thread-safe. Access to shared
- * data must be synchronized as methods of this interface may be executed
+ * data must be synchronized as methods of this interface may be executed 
  * from multiple threads.
  *
  * @since 4.0
  */
 public interface HttpRoutePlanner {
-
+    
     /**
      * Determines the route for a request.
      *
@@ -59,9 +59,9 @@ public interface HttpRoutePlanner {
      * @return  the route that the request should take
      *
      * @throws HttpException    in case of a problem
-     */
+     */        
     public HttpRoute determineRoute(HttpHost target,
                                     HttpRequest request,
                                     HttpContext context) throws HttpException;
-
+    
 }

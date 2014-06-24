@@ -27,46 +27,84 @@
 
 package org.apache.http.examples.client;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.params.ConnRoutePNames;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.util.EntityUtils;
 
 /**
- * How to send a request via proxy.
+ * How to send a request via proxy using {@link HttpClient}.
  *
  * @since 4.0
  */
 public class ClientExecuteProxy {
 
     public static void main(String[] args)throws Exception {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        try {
-            HttpHost target = new HttpHost("localhost", 443, "https");
-            HttpHost proxy = new HttpHost("127.0.0.1", 8080, "http");
 
-            RequestConfig config = RequestConfig.custom()
-                    .setProxy(proxy)
-                    .build();
-            HttpGet request = new HttpGet("/");
-            request.setConfig(config);
+        // make sure to use a proxy that supports CONNECT
+        HttpHost target = new HttpHost("issues.apache.org", 443, "https");
+        HttpHost proxy = new HttpHost("127.0.0.1", 8080, "http");
 
-            System.out.println("Executing request " + request.getRequestLine() + " to " + target + " via " + proxy);
+        // general setup
+        SchemeRegistry supportedSchemes = new SchemeRegistry();
 
-            CloseableHttpResponse response = httpclient.execute(target, request);
-            try {
-                System.out.println("----------------------------------------");
-                System.out.println(response.getStatusLine());
-                EntityUtils.consume(response.getEntity());
-            } finally {
-                response.close();
-            }
-        } finally {
-            httpclient.close();
+        // Register the "http" and "https" protocol schemes, they are
+        // required by the default operator to look up socket factories.
+        supportedSchemes.register(new Scheme("http", 
+                PlainSocketFactory.getSocketFactory(), 80));
+        supportedSchemes.register(new Scheme("https", 
+                SSLSocketFactory.getSocketFactory(), 443));
+
+        // prepare parameters
+        HttpParams params = new BasicHttpParams();
+        HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+        HttpProtocolParams.setContentCharset(params, "UTF-8");
+        HttpProtocolParams.setUseExpectContinue(params, true);
+
+        ClientConnectionManager ccm = new ThreadSafeClientConnManager(params, 
+                supportedSchemes);
+
+        DefaultHttpClient httpclient = new DefaultHttpClient(ccm, params);
+
+        httpclient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+
+        HttpGet req = new HttpGet("/");
+
+        System.out.println("executing request to " + target + " via " + proxy);
+        HttpResponse rsp = httpclient.execute(target, req);
+        HttpEntity entity = rsp.getEntity();
+
+        System.out.println("----------------------------------------");
+        System.out.println(rsp.getStatusLine());
+        Header[] headers = rsp.getAllHeaders();
+        for (int i = 0; i<headers.length; i++) {
+            System.out.println(headers[i]);
         }
+        System.out.println("----------------------------------------");
+
+        if (entity != null) {
+            System.out.println(EntityUtils.toString(entity));
+        }
+
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpclient.getConnectionManager().shutdown();        
     }
 
 }

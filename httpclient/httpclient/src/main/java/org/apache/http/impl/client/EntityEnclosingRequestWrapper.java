@@ -31,54 +31,50 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.http.annotation.NotThreadSafe;
+import org.apache.http.entity.HttpEntityWrapper;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.ProtocolException;
-import org.apache.http.annotation.NotThreadSafe;
-import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.protocol.HTTP;
 
 /**
- * A wrapper class for {@link HttpEntityEnclosingRequest}s that can
- * be used to change properties of the current request without
+ * A wrapper class for {@link HttpEntityEnclosingRequest}s that can 
+ * be used to change properties of the current request without 
  * modifying the original object.
  * </p>
  * This class is also capable of resetting the request headers to
  * the state of the original request.
  *
- * @since 4.0
  *
- * @deprecated (4.3) do not use.
+ * @since 4.0
  */
-@Deprecated
 @NotThreadSafe // e.g. [gs]etEntity()
-public class EntityEnclosingRequestWrapper extends RequestWrapper
+public class EntityEnclosingRequestWrapper extends RequestWrapper 
     implements HttpEntityEnclosingRequest {
-
+    
     private HttpEntity entity;
     private boolean consumed;
-
+    
     public EntityEnclosingRequestWrapper(final HttpEntityEnclosingRequest request)
         throws ProtocolException {
         super(request);
         setEntity(request.getEntity());
     }
 
-    @Override
     public HttpEntity getEntity() {
         return this.entity;
     }
 
-    @Override
     public void setEntity(final HttpEntity entity) {
         this.entity = entity != null ? new EntityWrapper(entity) : null;
         this.consumed = false;
     }
-
-    @Override
+    
     public boolean expectContinue() {
-        final Header expect = getFirstHeader(HTTP.EXPECT_DIRECTIVE);
+        Header expect = getFirstHeader(HTTP.EXPECT_DIRECTIVE);
         return expect != null && HTTP.EXPECT_CONTINUE.equalsIgnoreCase(expect.getValue());
     }
 
@@ -86,9 +82,9 @@ public class EntityEnclosingRequestWrapper extends RequestWrapper
     public boolean isRepeatable() {
         return this.entity == null || this.entity.isRepeatable() || !this.consumed;
     }
-
+    
     class EntityWrapper extends HttpEntityWrapper {
-
+        
         EntityWrapper(final HttpEntity entity) {
             super(entity);
         }
@@ -110,7 +106,7 @@ public class EntityEnclosingRequestWrapper extends RequestWrapper
             consumed = true;
             super.writeTo(outstream);
         }
-
+        
     }
-
+    
 }

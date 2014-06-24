@@ -28,10 +28,10 @@
 package org.apache.http.conn.routing;
 
 import org.apache.http.annotation.Immutable;
-import org.apache.http.util.Args;
 
 /**
- * Basic {@link HttpRouteDirector} implementation.
+ * Basic implementation of an {@link HttpRouteDirector HttpRouteDirector}.
+ * This implementation is stateless and therefore thread-safe.
  *
  * @since 4.0
  */
@@ -49,19 +49,20 @@ public class BasicRouteDirector implements HttpRouteDirector {
      *          either the next step to perform, or success, or failure.
      *          0 is for success, a negative value for failure.
      */
-    @Override
-    public int nextStep(final RouteInfo plan, final RouteInfo fact) {
-        Args.notNull(plan, "Planned route");
+    public int nextStep(RouteInfo plan, RouteInfo fact) {
+        if (plan == null) {
+            throw new IllegalArgumentException
+                ("Planned route may not be null.");
+        }
 
         int step = UNREACHABLE;
 
-        if ((fact == null) || (fact.getHopCount() < 1)) {
+        if ((fact == null) || (fact.getHopCount() < 1))
             step = firstStep(plan);
-        } else if (plan.getHopCount() > 1) {
+        else if (plan.getHopCount() > 1)
             step = proxiedStep(plan, fact);
-        } else {
+        else
             step = directStep(plan, fact);
-        }
 
         return step;
 
@@ -75,7 +76,7 @@ public class BasicRouteDirector implements HttpRouteDirector {
      *
      * @return  the first step
      */
-    protected int firstStep(final RouteInfo plan) {
+    protected int firstStep(RouteInfo plan) {
 
         return (plan.getHopCount() > 1) ?
             CONNECT_PROXY : CONNECT_TARGET;
@@ -91,32 +92,27 @@ public class BasicRouteDirector implements HttpRouteDirector {
      * @return  one of the constants defined in this class, indicating
      *          either the next step to perform, or success, or failure
      */
-    protected int directStep(final RouteInfo plan, final RouteInfo fact) {
+    protected int directStep(RouteInfo plan, RouteInfo fact) {
 
-        if (fact.getHopCount() > 1) {
+        if (fact.getHopCount() > 1)
             return UNREACHABLE;
-        }
         if (!plan.getTargetHost().equals(fact.getTargetHost()))
-         {
             return UNREACHABLE;
         // If the security is too low, we could now suggest to layer
         // a secure protocol on the direct connection. Layering on direct
         // connections has not been supported in HttpClient 3.x, we don't
         // consider it here until there is a real-life use case for it.
-        }
 
         // Should we tolerate if security is better than planned?
         // (plan.isSecure() && !fact.isSecure())
-        if (plan.isSecure() != fact.isSecure()) {
+        if (plan.isSecure() != fact.isSecure())
             return UNREACHABLE;
-        }
 
         // Local address has to match only if the plan specifies one.
         if ((plan.getLocalAddress() != null) &&
             !plan.getLocalAddress().equals(fact.getLocalAddress())
-            ) {
+            )
             return UNREACHABLE;
-        }
 
         return COMPLETE;
     }
@@ -131,50 +127,40 @@ public class BasicRouteDirector implements HttpRouteDirector {
      * @return  one of the constants defined in this class, indicating
      *          either the next step to perform, or success, or failure
      */
-    protected int proxiedStep(final RouteInfo plan, final RouteInfo fact) {
+    protected int proxiedStep(RouteInfo plan, RouteInfo fact) {
 
-        if (fact.getHopCount() <= 1) {
+        if (fact.getHopCount() <= 1)
             return UNREACHABLE;
-        }
-        if (!plan.getTargetHost().equals(fact.getTargetHost())) {
+        if (!plan.getTargetHost().equals(fact.getTargetHost()))
             return UNREACHABLE;
-        }
         final int phc = plan.getHopCount();
         final int fhc = fact.getHopCount();
-        if (phc < fhc) {
+        if (phc < fhc)
             return UNREACHABLE;
-        }
 
         for (int i=0; i<fhc-1; i++) {
-            if (!plan.getHopTarget(i).equals(fact.getHopTarget(i))) {
+            if (!plan.getHopTarget(i).equals(fact.getHopTarget(i)))
                 return UNREACHABLE;
-            }
         }
         // now we know that the target matches and proxies so far are the same
         if (phc > fhc)
-         {
             return TUNNEL_PROXY; // need to extend the proxy chain
-        }
-
+            
         // proxy chain and target are the same, check tunnelling and layering
         if ((fact.isTunnelled() && !plan.isTunnelled()) ||
-            (fact.isLayered()   && !plan.isLayered())) {
+            (fact.isLayered()   && !plan.isLayered()))
             return UNREACHABLE;
-        }
 
-        if (plan.isTunnelled() && !fact.isTunnelled()) {
+        if (plan.isTunnelled() && !fact.isTunnelled())
             return TUNNEL_TARGET;
-        }
-        if (plan.isLayered() && !fact.isLayered()) {
+        if (plan.isLayered() && !fact.isLayered())
             return LAYER_PROTOCOL;
-        }
 
         // tunnel and layering are the same, remains to check the security
         // Should we tolerate if security is better than planned?
         // (plan.isSecure() && !fact.isSecure())
-        if (plan.isSecure() != fact.isSecure()) {
+        if (plan.isSecure() != fact.isSecure())
             return UNREACHABLE;
-        }
 
         return COMPLETE;
     }

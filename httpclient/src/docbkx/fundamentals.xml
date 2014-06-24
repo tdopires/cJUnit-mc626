@@ -34,23 +34,26 @@
             interface that defines the contract described above. </para>
         <para>Here is an example of request execution process in its simplest form:</para>
         <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
+HttpClient httpclient = new DefaultHttpClient();
 HttpGet httpget = new HttpGet("http://localhost/");
-CloseableHttpResponse response = httpclient.execute(httpget);
-try {
-    <...>
-} finally {
-    response.close();
+HttpResponse response = httpclient.execute(httpget);
+HttpEntity entity = response.getEntity();
+if (entity != null) {
+    InputStream instream = entity.getContent();
+    int l;
+    byte[] tmp = new byte[2048];
+    while ((l = instream.read(tmp)) != -1) {
+    }
 }
 ]]></programlisting>
         <section>
             <title>HTTP request</title>
             <para>All HTTP requests have a request line consisting a method name, a request URI and
-                an HTTP protocol version.</para>
+                a HTTP protocol version.</para>
             <para>HttpClient supports out of the box all HTTP methods defined in the HTTP/1.1
                 specification: <literal>GET</literal>, <literal>HEAD</literal>,
                     <literal>POST</literal>, <literal>PUT</literal>, <literal>DELETE</literal>,
-                    <literal>TRACE</literal> and <literal>OPTIONS</literal>. There is a specific
+                    <literal>TRACE</literal> and <literal>OPTIONS</literal>. There is a special
                 class for each method type.: <classname>HttpGet</classname>,
                     <classname>HttpHead</classname>, <classname>HttpPost</classname>,
                     <classname>HttpPut</classname>, <classname>HttpDelete</classname>,
@@ -62,18 +65,28 @@ try {
 HttpGet httpget = new HttpGet(
      "http://www.google.com/search?hl=en&q=httpclient&btnG=Google+Search&aq=f&oq=");
 ]]></programlisting>
-            <para>HttpClient provides <classname>URIBuilder</classname> utility class to simplify 
-                creation and modification of request URIs.</para>
+            <para>HttpClient provides a number of utility methods to simplify creation and
+                modification of request URIs.</para>
+            <para>URI can be assembled programmatically:</para>
             <programlisting><![CDATA[
-URI uri = new URIBuilder()
-        .setScheme("http")
-        .setHost("www.google.com")
-        .setPath("/search")
-        .setParameter("q", "httpclient")
-        .setParameter("btnG", "Google Search")
-        .setParameter("aq", "f")
-        .setParameter("oq", "")
-        .build();
+URI uri = URIUtils.createURI("http", "www.google.com", -1, "/search", 
+    "q=httpclient&btnG=Google+Search&aq=f&oq=", null);
+HttpGet httpget = new HttpGet(uri);
+System.out.println(httpget.getURI());
+]]></programlisting>
+            <para>stdout &gt;</para>
+            <programlisting><![CDATA[
+http://www.google.com/search?q=httpclient&btnG=Google+Search&aq=f&oq=
+]]></programlisting>
+            <para>Query string can also be generated from individual parameters:</para>
+            <programlisting><![CDATA[
+List<NameValuePair> qparams = new ArrayList<NameValuePair>();
+qparams.add(new BasicNameValuePair("q", "httpclient"));
+qparams.add(new BasicNameValuePair("btnG", "Google Search"));
+qparams.add(new BasicNameValuePair("aq", "f"));
+qparams.add(new BasicNameValuePair("oq", null));
+URI uri = URIUtils.createURI("http", "www.google.com", -1, "/search", 
+    URLEncodedUtils.format(qparams, "UTF-8"), null);
 HttpGet httpget = new HttpGet(uri);
 System.out.println(httpget.getURI());
 ]]></programlisting>
@@ -189,7 +202,7 @@ domain=localhost
             <para>HTTP messages can carry a content entity associated with the request or response.
                 Entities can be found in some requests and in some responses, as they are optional.
                 Requests that use entities are referred to as entity enclosing requests. The HTTP
-                specification defines two entity enclosing request methods: <literal>POST</literal> and
+                specification defines two entity enclosing methods: <literal>POST</literal> and
                     <literal>PUT</literal>. Responses are usually expected to enclose a content
                 entity. There are exceptions to this rule such as responses to
                     <literal>HEAD</literal> method and <literal>204 No Content</literal>,
@@ -263,16 +276,19 @@ domain=localhost
                     supplied by the creator of the entity.</para>
                 <programlisting><![CDATA[
 StringEntity myEntity = new StringEntity("important message", 
-   ContentType.create("text/plain", "UTF-8"));
+    "UTF-8");
 
 System.out.println(myEntity.getContentType());
 System.out.println(myEntity.getContentLength());
+System.out.println(EntityUtils.getContentCharSet(myEntity));
 System.out.println(EntityUtils.toString(myEntity));
-System.out.println(EntityUtils.toByteArray(myEntity).length);]]></programlisting>
+System.out.println(EntityUtils.toByteArray(myEntity).length);
+]]></programlisting>
                 <para>stdout &gt;</para>
                 <programlisting><![CDATA[
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 17
+UTF-8
 important message
 17
 ]]></programlisting>
@@ -280,58 +296,31 @@ important message
         </section>
         <section>
             <title>Ensuring release of low level resources</title>
-            <para> In order to ensure proper release of system resources one must close either
-                the content stream associated with the entity or the response itself</para>
-            <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
-HttpGet httpget = new HttpGet("http://localhost/");
-CloseableHttpResponse response = httpclient.execute(httpget);
-try {
-    HttpEntity entity = response.getEntity();
-    if (entity != null) {
-        InputStream instream = entity.getContent();
-        try {
-            // do something useful
-        } finally {
-            instream.close();
-        }
-    }
-} finally {
-    response.close();
-}
-]]></programlisting>
-            <para>The difference between closing the content stream and closing the response
-                is that the former will attempt to keep the underlying connection alive
-                by consuming the entity content while the latter immediately shuts down
-                and discards the connection.</para>
-            <para>Please note that the <methodname>HttpEntity#writeTo(OutputStream)</methodname>
-                method is also required to ensure proper release of system resources once the 
-                entity has been fully written out. If this method obtains an instance of 
-                <classname>java.io.InputStream</classname> by calling 
-                <methodname>HttpEntity#getContent()</methodname>, it is also expected to close
-                the stream in a finally clause.</para>
-            <para>When working with streaming entities, one can use the
-                <methodname>EntityUtils#consume(HttpEntity)</methodname> method to ensure that
-                the entity content has been fully consumed and the underlying stream has been
-                closed.</para>
+            <para>When finished with a response entity, it's important to ensure that all entity
+                content has been fully consumed, so that the connection could be safely returned to
+                the connection pool and re-used by the connection manager for subsequent requests.
+                The easiest way to do so is to call the
+                    <methodname>HttpEntity#consumeContent(</methodname>) method to consume any
+                available content on the stream. HttpClient will automatically release the
+                underlying connection back to the connection manager as soon as it detects that the
+                end of the content stream has been reached. The
+                    <methodname>HttpEntity#consumeContent()</methodname> method is safe to call more
+                than once.</para>
             <para>There can be situations, however, when only a small portion of the entire response
                 content needs to be retrieved and the performance penalty for consuming the
-                remaining content and making the connection reusable is too high, in which case
-                one can terminate the content stream by closing the response.</para>
+                remaining content and making the connection reusable is too high, one can simply
+                terminate the request by calling <methodname>HttpUriRequest#abort()</methodname>
+                method.</para>
             <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
 HttpGet httpget = new HttpGet("http://localhost/");
-CloseableHttpResponse response = httpclient.execute(httpget);
-try {
-    HttpEntity entity = response.getEntity();
-    if (entity != null) {
-        InputStream instream = entity.getContent();
-        int byteOne = instream.read();
-        int byteTwo = instream.read();
-        // Do not need the rest
-    }
-} finally {
-    response.close();
+HttpResponse response = httpclient.execute(httpget);
+HttpEntity entity = response.getEntity();
+if (entity != null) {
+    InputStream instream = entity.getContent();
+    int byteOne = instream.read();
+    int byteTwo = instream.read();
+    // Do not need the rest
+    httpget.abort();
 }
 ]]></programlisting>
             <para>The connection will not be reused, but all level resources held by it will be
@@ -339,7 +328,7 @@ try {
         </section>
         <section>
             <title>Consuming entity content</title>
-            <para>The recommended way to consume the content of an entity is by using its
+            <para>The recommended way to consume content of an entity is by using its
                     <methodname>HttpEntity#getContent()</methodname> or
                     <methodname>HttpEntity#writeTo(OutputStream)</methodname> methods. HttpClient
                 also comes with the <classname>EntityUtils</classname> class, which exposes several
@@ -350,21 +339,16 @@ try {
                 strongly discouraged unless the response entities originate from a trusted HTTP
                 server and are known to be of limited length.</para>
             <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
 HttpGet httpget = new HttpGet("http://localhost/");
-CloseableHttpResponse response = httpclient.execute(httpget);
-try {
-    HttpEntity entity = response.getEntity();
-    if (entity != null) {
-        long len = entity.getContentLength();
-        if (len != -1 && len < 2048) {
-            System.out.println(EntityUtils.toString(entity));
-        } else {
-            // Stream content out
-        }
+HttpResponse response = httpclient.execute(httpget);
+HttpEntity entity = response.getEntity();
+if (entity != null) {
+    long len = entity.getContentLength();
+    if (len != -1 && len < 2048) {
+        System.out.println(EntityUtils.toString(entity));
+    } else {
+        // Stream content out
     }
-} finally {
-    response.close();
 }
 ]]></programlisting>
             <para>In some situations it may be necessary to be able to read entity content more than
@@ -374,7 +358,8 @@ try {
                 the original entity to be read into a in-memory buffer. In all other ways the entity
                 wrapper will be have the original one.</para>
             <programlisting><![CDATA[
-CloseableHttpResponse response = <...>
+HttpGet httpget = new HttpGet("http://localhost/");
+HttpResponse response = httpclient.execute(httpget);
 HttpEntity entity = response.getEntity();
 if (entity != null) {
     entity = new BufferedHttpEntity(entity);
@@ -384,7 +369,7 @@ if (entity != null) {
         <section>
             <title>Producing entity content</title>
             <para>HttpClient provides several classes that can be used to efficiently stream out
-                content throught HTTP connections. Instances of those classes can be associated with
+                content though HTTP connections. Instances of those classes can be associated with
                 entity enclosing requests such as <literal>POST</literal> and <literal>PUT</literal>
                 in order to enclose entity content into outgoing HTTP requests. HttpClient provides
                 several classes for most common data containers such as string, byte array, input
@@ -394,8 +379,7 @@ if (entity != null) {
                 <classname>FileEntity</classname>.</para>
             <programlisting><![CDATA[
 File file = new File("somefile.txt");
-FileEntity entity = new FileEntity(file, 
-    ContentType.create("text/plain", "UTF-8"));        
+FileEntity entity = new FileEntity(file, "text/plain; charset=\"UTF-8\"");
 
 HttpPost httppost = new HttpPost("http://localhost/action.do");
 httppost.setEntity(entity);
@@ -403,24 +387,52 @@ httppost.setEntity(entity);
             <para>Please note <classname>InputStreamEntity</classname> is not repeatable, because it
                 can only read from the underlying data stream once. Generally it is recommended to
                 implement a custom <interfacename>HttpEntity</interfacename> class which is
-                self-contained instead of using the generic <classname>InputStreamEntity</classname>.
+                self-contained instead of using generic <classname>InputStreamEntity</classname>.
                     <classname>FileEntity</classname> can be a good starting point.</para>
             <section>
+                <title>Dynamic content entities</title>
+                <para>Often HTTP entities need to be generated dynamically based a particular
+                    execution context. HttpClient provides support for dynamic entities by using
+                        <classname>EntityTemplate</classname> entity class and
+                        <interfacename>ContentProducer</interfacename> interface. Content producers
+                    are objects which produce their content on demand, by writing it out to an
+                    output stream. They are expected to be able produce their content every time
+                    they are requested to do so. So entities created with
+                        <classname>EntityTemplate</classname> are generally self-contained and
+                    repeatable.</para>
+                <programlisting><![CDATA[
+ContentProducer cp = new ContentProducer() {
+    public void writeTo(OutputStream outstream) throws IOException {
+        Writer writer = new OutputStreamWriter(outstream, "UTF-8");
+        writer.write("<response>");
+        writer.write("  <content>");
+        writer.write("    important stuff");
+        writer.write("  </content>");
+        writer.write("</response>");
+        writer.flush();
+    }
+};
+HttpEntity entity = new EntityTemplate(cp);
+HttpPost httppost = new HttpPost("http://localhost/handler.do");
+httppost.setEntity(entity);
+]]></programlisting>
+            </section>
+            <section>
                 <title>HTML forms</title>
-                <para>Many applications need to simulate the process of submitting an
+                <para>Many applications frequently need to simulate the process of submitting an
                     HTML form, for instance, in order to log in to a web application or submit input
-                    data. HttpClient provides the entity class
+                    data. HttpClient provides special entity class
                         <classname>UrlEncodedFormEntity</classname> to facilitate the
                     process.</para>
                 <programlisting><![CDATA[
 List<NameValuePair> formparams = new ArrayList<NameValuePair>();
 formparams.add(new BasicNameValuePair("param1", "value1"));
 formparams.add(new BasicNameValuePair("param2", "value2"));
-UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, Consts.UTF_8);
+UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
 HttpPost httppost = new HttpPost("http://localhost/handler.do");
 httppost.setEntity(entity);
 ]]></programlisting>
-                <para>The <classname>UrlEncodedFormEntity</classname> instance will use the so
+                <para>This <classname>UrlEncodedFormEntity</classname> instance will use the so
                     called URL encoding to encode parameters and produce the following
                     content:</para>
                 <programlisting><![CDATA[
@@ -431,14 +443,14 @@ param1=value1&param2=value2
                 <title>Content chunking</title>
                 <para>Generally it is recommended to let HttpClient choose the most appropriate
                     transfer encoding based on the properties of the HTTP message being transferred.
-                    It is possible, however, to inform HttpClient that chunk coding is preferred
+                    It is possible, however, to inform HttpClient that the chunk coding is preferred
                     by setting <methodname>HttpEntity#setChunked()</methodname> to true. Please note
-                    that HttpClient will use this flag as a hint only. This value will be ignored
+                    that HttpClient will use this flag as a hint only. This value well be ignored
                     when using HTTP protocol versions that do not support chunk coding, such as
                     HTTP/1.0.</para>
                 <programlisting><![CDATA[
-StringEntity entity = new StringEntity("important message",
-        ContentType.create("plain/text", Consts.UTF_8));
+StringEntity entity = new StringEntity("important message", 
+    "text/plain; charset=\"UTF-8\"");
 entity.setChunked(true);
 HttpPost httppost = new HttpPost("http://localhost/acrtion.do");
 httppost.setEntity(entity);
@@ -448,97 +460,28 @@ httppost.setEntity(entity);
         <section>
             <title>Response handlers</title>
             <para>The simplest and the most convenient way to handle responses is by using
-                the <interfacename>ResponseHandler</interfacename> interface, which includes
-                the <methodname>handleResponse(HttpResponse response)</methodname> method. 
-                This method completely
+                    <interfacename>ResponseHandler</interfacename> interface. This method completely
                 relieves the user from having to worry about connection management. When using a
-                    <interfacename>ResponseHandler</interfacename>, HttpClient will automatically
+                    <interfacename>ResponseHandler</interfacename> HttpClient will automatically
                 take care of ensuring release of the connection back to the connection manager
                 regardless whether the request execution succeeds or causes an exception.</para>
             <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
-HttpGet httpget = new HttpGet("http://localhost/json");
+HttpClient httpclient = new DefaultHttpClient();
+HttpGet httpget = new HttpGet("http://localhost/");
 
-ResponseHandler<MyJsonObject> rh = new ResponseHandler<MyJsonObject>() {
-
-    @Override
-    public JsonObject handleResponse(
-            final HttpResponse response) throws IOException {
-        StatusLine statusLine = response.getStatusLine();
+ResponseHandler<byte[]> handler = new ResponseHandler<byte[]>() {
+    public byte[] handleResponse(
+            HttpResponse response) throws ClientProtocolException, IOException {
         HttpEntity entity = response.getEntity();
-        if (statusLine.getStatusCode() >= 300) {
-            throw new HttpResponseException(
-                    statusLine.getStatusCode(),
-                    statusLine.getReasonPhrase());
+        if (entity != null) {
+            return EntityUtils.toByteArray(entity);
+        } else {
+            return null;
         }
-        if (entity == null) {
-            throw new ClientProtocolException("Response contains no content");
-        }
-        Gson gson = new GsonBuilder().create();
-        ContentType contentType = ContentType.getOrDefault(entity);
-        Charset charset = contentType.getCharset();
-        Reader reader = new InputStreamReader(entity.getContent(), charset);
-        return gson.fromJson(reader, MyJsonObject.class);
     }
 };
-MyJsonObject myjson = client.execute(httpget, rh);
-]]></programlisting>
-        </section>
-    </section>
-    <section>
-        <title>HttpClient interface</title>
-        <para><interfacename>HttpClient</interfacename> interface represents the most essential
-            contract for HTTP request execution. It imposes no restrictions or particular details on
-            the request execution process and leaves the specifics of connection management, state
-            management, authentication and redirect handling up to individual implementations. This
-            should make it easier to decorate the interface with additional functionality such as
-            response content caching.</para>
-        <para>Generally <interfacename>HttpClient</interfacename> implementations act as a facade
-            to a number of special purpose handler or strategy interface implementations
-            responsible for handling of a particular aspect of the HTTP protocol such as redirect
-            or authentication handling or making decision about connection persistence and keep
-            alive duration. This enables the users to selectively replace default implementation
-            of those aspects with custom, application specific ones.</para>
-        <programlisting><![CDATA[
-ConnectionKeepAliveStrategy keepAliveStrat = new DefaultConnectionKeepAliveStrategy() {
 
-    @Override
-    public long getKeepAliveDuration(
-            HttpResponse response,
-            HttpContext context) {
-        long keepAlive = super.getKeepAliveDuration(response, context);
-        if (keepAlive == -1) {
-            // Keep connections alive 5 seconds if a keep-alive value
-            // has not be explicitly set by the server
-            keepAlive = 5000;
-        }
-        return keepAlive;
-    }
-
-};
-CloseableHttpClient httpclient = HttpClients.custom()
-        .setKeepAliveStrategy(keepAliveStrat)
-        .build();
-]]></programlisting>
-        <section>
-            <title>HttpClient thread safety</title>
-            <para><interfacename>HttpClient</interfacename> implementations are expected to be
-                thread safe. It is recommended that the same instance of this class is reused for
-                multiple request executions.</para>
-        </section>
-        <section>
-            <title>HttpClient resource deallocation</title>
-            <para>When an instance <classname>CloseableHttpClient</classname> is no longer needed
-                and is about to go out of scope the connection manager associated with it must
-                be shut down by calling the <methodname>CloseableHttpClient#close()</methodname>
-                method.</para>
-            <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
-try {
-    <...>
-} finally {
-    httpclient.close();
-}
+byte[] response = httpclient.execute(httpget, handler);
 ]]></programlisting>
         </section>
     </section>
@@ -551,129 +494,100 @@ try {
             executed within a particular execution context, referred to as HTTP context. Multiple
             logically related requests can participate in a logical session if the same context is
             reused between consecutive requests. HTTP context functions similarly to
-            a  <interfacename>java.util.Map&lt;String, Object&gt;</interfacename>. It is
-            simply a collection of arbitrary named values. An application can populate context
-            attributes prior to request execution or examine the context after the execution has
+                <interfacename>java.util.Map&lt;String, Object&gt;</interfacename>. It is
+            simply a collection of arbitrary named values. Application can populate context
+            attributes prior to a request execution or examine the context after the execution has
             been completed.</para>
-        <para><interfacename>HttpContext</interfacename> can contain arbitrary objects and 
-            therefore may be unsafe to share between multiple threads. It is recommended that
-            each thread of execution maintains its own context.</para>
         <para>In the course of HTTP request execution HttpClient adds the following attributes to
             the execution context:</para>
         <itemizedlist>
             <listitem>
                 <formalpara>
+                    <title>'http.connection':</title>
                     <para><interfacename>HttpConnection</interfacename> instance representing the
                         actual connection to the target server.</para>
                 </formalpara>
             </listitem>
             <listitem>
                 <formalpara>
+                    <title>'http.target_host':</title>
                     <para><classname>HttpHost</classname> instance representing the connection
                         target.</para>
                 </formalpara>
             </listitem>
             <listitem>
                 <formalpara>
-                    <para><classname>HttpRoute</classname> instance representing the complete
-                        connection route</para>
+                    <title>'http.proxy_host':</title>
+                    <para><classname>HttpHost</classname> instance representing the connection
+                        proxy, if used</para>
                 </formalpara>
             </listitem>
             <listitem>
                 <formalpara>
+                    <title>'http.request':</title>
                     <para><interfacename>HttpRequest</interfacename> instance representing the
-                        actual HTTP request. The final HttpRequest object in the execution context
-                        always represents the state of the message <emphasis>exactly</emphasis>
-                        as it was sent to the target server. Per default HTTP/1.0 and HTTP/1.1
-                        use relative request URIs. However if the request is sent via a proxy
-                        in a non-tunneling mode then the URI will be absolute.</para>
+                        actual HTTP request.</para>
                 </formalpara>
             </listitem>
             <listitem>
                 <formalpara>
+                    <title>'http.response':</title>
                     <para><interfacename>HttpResponse</interfacename> instance representing the
                         actual HTTP response.</para>
                 </formalpara>
             </listitem>
             <listitem>
                 <formalpara>
+                    <title>'http.request_sent':</title>
                     <para><classname>java.lang.Boolean</classname> object representing the flag
                         indicating whether the actual request has been fully transmitted to the
                         connection target.</para>
                 </formalpara>
             </listitem>
-            <listitem>
-                <formalpara>
-                    <para><classname>RequestConfig</classname> object representing the actual
-                        request configuation.</para>
-                </formalpara>
-            </listitem>
-            <listitem>
-                <formalpara>
-                    <para><classname>java.util.List&lt;URI&gt;</classname> object representing a collection
-                        of all redirect locations received in the process of request
-                        execution.</para>
-                </formalpara>
-            </listitem>
         </itemizedlist>
-        <para>One can use <classname>HttpClientContext</classname> adaptor class to simplify
-            interractions with the context state.</para>
+        <para>For instance, in order to determine the final redirect target, one can examine the
+            value of the <literal>http.target_host</literal> attribute after the request
+            execution:</para>
         <programlisting><![CDATA[
-HttpContext context = <...>
-HttpClientContext clientContext = HttpClientContext.adapt(context);
-HttpHost target = clientContext.getTargetHost();
-HttpRequest request = clientContext.getRequest();
-HttpResponse response = clientContext.getResponse();
-RequestConfig config = clientContext.getRequestConfig();
-]]></programlisting>
-        <para>Multiple request sequences that represent a logically related session should be
-            executed with the same <interfacename>HttpContext</interfacename> instance to ensure
-            automatic propagation of conversation context and state information between
-            requests.</para>
-        <para>In the following example the request configuration set by the initial request will be
-            kept in the execution context and get propagated to the consecutive requests sharing
-            the same context.</para>
-        <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
-RequestConfig requestConfig = RequestConfig.custom()
-        .setSocketTimeout(1000)
-        .setConnectTimeout(1000)
-        .build();
+DefaultHttpClient httpclient = new DefaultHttpClient();
 
-HttpGet httpget1 = new HttpGet("http://localhost/1");
-httpget1.setConfig(requestConfig);
-CloseableHttpResponse response1 = httpclient.execute(httpget1, context);
-try {
-    HttpEntity entity1 = response1.getEntity();
-} finally {
-    response1.close();
+HttpContext localContext = new BasicHttpContext();
+HttpGet httpget = new HttpGet("http://www.google.com/");
+
+HttpResponse response = httpclient.execute(httpget, localContext);
+
+HttpHost target = (HttpHost) localContext.getAttribute(
+    ExecutionContext.HTTP_TARGET_HOST);
+
+System.out.println("Final target: " + target);
+
+HttpEntity entity = response.getEntity();
+if (entity != null) {
+entity.consumeContent();
 }
-HttpGet httpget2 = new HttpGet("http://localhost/2");
-CloseableHttpResponse response2 = httpclient.execute(httpget2, context);
-try {
-    HttpEntity entity2 = response2.getEntity();
-} finally {
-    response2.close();
-}
+]]></programlisting>
+        <para>stdout &gt;</para>
+        <programlisting><![CDATA[
+Final target: http://www.google.ch
 ]]></programlisting>
     </section>
     <section>
         <title>Exception handling</title>
         <para>HttpClient can throw two types of exceptions:
-            <exceptionname>java.io.IOException</exceptionname> in case of an I/O failure such as
+                <exceptionname>java.io.IOException</exceptionname> in case of an I/O failure such as
             socket timeout or an socket reset and <exceptionname>HttpException</exceptionname> that
             signals an HTTP failure such as a violation of the HTTP protocol. Usually I/O errors are
             considered non-fatal and recoverable, whereas HTTP protocol errors are considered fatal
             and cannot be automatically recovered from.</para>
         <section>
             <title>HTTP transport safety</title>
-            <para>It is important to understand that the HTTP protocol is not well suited to all
+            <para>It is important to understand that the HTTP protocol is not well suited for all
                 types of applications. HTTP is a simple request/response oriented protocol which was
                 initially designed to support static or dynamically generated content retrieval. It
                 has never been intended to support transactional operations. For instance, the HTTP
                 server will consider its part of the contract fulfilled if it succeeds in receiving
                 and processing the request, generating a response and sending a status code back to
-                the client. The server will make no attempt to roll back the transaction if the
+                the client. The server will make no attempts to roll back the transaction if the
                 client fails to receive the response in its entirety due to a read timeout, a
                 request cancellation or a system crash. If the client decides to retry the same
                 request, the server will inevitably end up executing the same transaction more than
@@ -686,7 +600,7 @@ try {
         </section>
         <section>
             <title>Idempotent methods</title>
-            <para>HTTP/1.1 specification defines an idempotent method as</para>
+            <para>HTTP/1.1 specification defines idempotent method as</para>
             <para>
                 <citation>Methods can also have the property of &quot;idempotence&quot; in
                     that (aside from error or expiration issues) the side-effects of N &gt; 0
@@ -724,6 +638,15 @@ try {
                         target server (i.e. the request has not been fully transmitted to the
                         server).</para>
                 </listitem>
+                <listitem>
+                    <para>HttpClient will automatically retry those methods that have been fully
+                        transmitted to the server, but the server failed to respond with an HTTP
+                        status code (the server simply drops the connection without sending anything
+                        back). In this case it is assumed that the request has not been processed by
+                        the server and the application state has not changed. If this assumption may
+                        not hold true for the web server your application is targeting it is highly
+                        recommended to provide a custom exception handler.</para>
+                </listitem>
             </itemizedlist>
         </section>
         <section>
@@ -732,68 +655,61 @@ try {
                 implementation of the <interfacename>HttpRequestRetryHandler</interfacename>
                 interface.</para>
             <programlisting><![CDATA[
+DefaultHttpClient httpclient = new DefaultHttpClient();
+
 HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
 
     public boolean retryRequest(
-            IOException exception,
+            IOException exception, 
             int executionCount,
             HttpContext context) {
         if (executionCount >= 5) {
             // Do not retry if over max retry count
             return false;
         }
-        if (exception instanceof InterruptedIOException) {
-            // Timeout
+        if (exception instanceof NoHttpResponseException) {
+            // Retry if the server dropped connection on us
+            return true;
+        }
+        if (exception instanceof SSLHandshakeException) {
+            // Do not retry on SSL handshake exception
             return false;
         }
-        if (exception instanceof UnknownHostException) {
-            // Unknown host
-            return false;
-        }
-        if (exception instanceof ConnectTimeoutException) {
-            // Connection refused
-            return false;
-        }
-        if (exception instanceof SSLException) {
-            // SSL handshake exception
-            return false;
-        }
-        HttpClientContext clientContext = HttpClientContext.adapt(context);
-        HttpRequest request = clientContext.getRequest();
-        boolean idempotent = !(request instanceof HttpEntityEnclosingRequest);
+        HttpRequest request = (HttpRequest) context.getAttribute(
+                ExecutionContext.HTTP_REQUEST);
+        boolean idempotent = !(request instanceof HttpEntityEnclosingRequest); 
         if (idempotent) {
-            // Retry if the request is considered idempotent
+            // Retry if the request is considered idempotent 
             return true;
         }
         return false;
     }
 
 };
-CloseableHttpClient httpclient = HttpClients.custom()
-        .setRetryHandler(myRetryHandler)
-        .build();
+
+httpclient.setHttpRequestRetryHandler(myRetryHandler);
 ]]></programlisting>
         </section>
     </section>
     <section>
         <title>Aborting requests</title>
-        <para>In some situations HTTP request execution fails to complete within the expected time
+        <para>In some situations HTTP request execution fail to complete within the expected time
             frame due to high load on the target server or too many concurrent requests issued on
             the client side. In such cases it may be necessary to terminate the request prematurely
             and unblock the execution thread blocked in a I/O operation. HTTP requests being
             executed by HttpClient can be aborted at any stage of execution by invoking
                 <methodname>HttpUriRequest#abort()</methodname> method. This method is thread-safe
             and can be called from any thread. When an HTTP request is aborted its execution thread
-            - even if currently blocked in an I/O operation - is guaranteed to unblock by throwing a
+            blocked in an I/O operation is guaranteed to unblock by throwing a
                 <exceptionname>InterruptedIOException</exceptionname></para>
     </section>
-    <section id="protocol_interceptors">
+    <section>
         <title>HTTP protocol interceptors</title>
-        <para>The HTTP protocol interceptor is a routine that implements a specific aspect of the HTTP
+        <para>HTTP protocol interceptor is a routine that implements a specific aspect of the HTTP
             protocol. Usually protocol interceptors are expected to act upon one specific header or
-            a group of related headers of the incoming message, or populate the outgoing message with
+            a group of related headers of the incoming message or populate the outgoing message with
             one specific header or a group of related headers. Protocol interceptors can also
-            manipulate content entities enclosed with messages - transparent content compression /
+            manipulate content entities enclosed with messages, transparent content compression /
             decompression being a good example. Usually this is accomplished by using the
             'Decorator' pattern where a wrapper entity class is used to decorate the original
             entity. Several protocol interceptors can be combined to form one logical unit.</para>
@@ -811,71 +727,229 @@ CloseableHttpClient httpclient = HttpClients.custom()
         <para>This is an example of how local context can be used to persist a processing state
             between consecutive requests:</para>
         <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.custom()
-        .addInterceptorLast(new HttpRequestInterceptor() {
+DefaultHttpClient httpclient = new DefaultHttpClient();
 
-            public void process(
-                    final HttpRequest request,
-                    final HttpContext context) throws HttpException, IOException {
-                AtomicInteger count = (AtomicInteger) context.getAttribute("count");
-                request.addHeader("Count", Integer.toString(count.getAndIncrement()));
-            }
-
-        })
-        .build();
+HttpContext localContext = new BasicHttpContext();
 
 AtomicInteger count = new AtomicInteger(1);
-HttpClientContext localContext = HttpClientContext.create();
+
 localContext.setAttribute("count", count);
+
+httpclient.addRequestInterceptor(new HttpRequestInterceptor() {
+
+    public void process(
+            final HttpRequest request, 
+            final HttpContext context) throws HttpException, IOException {
+        AtomicInteger count = (AtomicInteger) context.getAttribute("count");
+        request.addHeader("Count", Integer.toString(count.getAndIncrement()));
+    }
+    
+});
 
 HttpGet httpget = new HttpGet("http://localhost/");
 for (int i = 0; i < 10; i++) {
-    CloseableHttpResponse response = httpclient.execute(httpget, localContext);
-    try {
-        HttpEntity entity = response.getEntity();
-    } finally {
-        response.close();
+    HttpResponse response = httpclient.execute(httpget, localContext);
+    
+    HttpEntity entity = response.getEntity();
+    if (entity != null) {
+        entity.consumeContent();
     }
 }
 ]]></programlisting>
     </section>
     <section>
-        <title>Redirect handling</title>
-        <para>HttpClient handles all types of redirects automatically, except those explicitly
-            prohibited by the HTTP specification as requiring user intervention. <literal>See
-                Other</literal> (status code 303) redirects on <literal>POST</literal> and
-            <literal>PUT</literal> requests are converted to <literal>GET</literal> requests as
-            required by the HTTP specification. One can use a custom redirect strategy to relaxe
-            restrictions on automatic redirection of POST methods imposed by the HTTP
-            specification.</para>
-        <programlisting><![CDATA[
-LaxRedirectStrategy redirectStrategy = new LaxRedirectStrategy();
-CloseableHttpClient httpclient = HttpClients.custom()
-        .setRedirectStrategy(redirectStrategy)
-        .build();
+        <title>HTTP parameters</title>
+        <para>HttpParams interface represents a collection of immutable values that define a runtime
+            behavior of a component. In many ways <interfacename>HttpParams</interfacename> is
+            similar to <interfacename>HttpContext</interfacename>. The main distinction between the
+            two lies in their use at runtime. Both interfaces represent a collection of objects that
+            are organized as a map of keys to object values, but serve distinct purposes:</para>
+        <itemizedlist>
+            <listitem>
+                <para><interfacename>HttpParams</interfacename> is intended to contain simple
+                    objects: integers, doubles, strings, collections and objects that remain
+                    immutable at runtime.</para>
+            </listitem>
+            <listitem>
+                <para>
+                    <interfacename>HttpParams</interfacename> is expected to be used in the 'write
+                    once - ready many' mode. <interfacename>HttpContext</interfacename> is intended
+                    to contain complex objects that are very likely to mutate in the course of HTTP
+                    message processing. </para>
+            </listitem>
+            <listitem>
+                <para>The purpose of <interfacename>HttpParams</interfacename> is to define a
+                    behavior of other components. Usually each complex component has its own
+                        <interfacename>HttpParams</interfacename> object. The purpose of
+                        <interfacename>HttpContext</interfacename> is to represent an execution
+                    state of an HTTP process. Usually the same execution context is shared among
+                    many collaborating objects.</para>
+            </listitem>
+        </itemizedlist>
+        <section>
+            <title>Parameter hierarchies</title>
+            <para>In the course of HTTP request execution <interfacename>HttpParams</interfacename>
+                of the <interfacename>HttpRequest</interfacename> object are linked together with
+                    <interfacename>HttpParams</interfacename> of the
+                    <interfacename>HttpClient</interfacename> instance used to execute the request.
+                This enables parameters set at the HTTP request level take precedence over
+                    <interfacename>HttpParams</interfacename> set at the HTTP client level. The
+                recommended practice is to set common parameters shared by all HTTP requests at the
+                HTTP client level and selectively override specific parameters at the HTTP request
+                level.</para>
+            <programlisting><![CDATA[
+DefaultHttpClient httpclient = new DefaultHttpClient();
+httpclient.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, 
+    HttpVersion.HTTP_1_0);
+httpclient.getParams().setParameter(CoreProtocolPNames.HTTP_CONTENT_CHARSET, 
+    "UTF-8");
+
+HttpGet httpget = new HttpGet("http://www.google.com/");
+httpget.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, 
+    HttpVersion.HTTP_1_1);
+httpget.getParams().setParameter(CoreProtocolPNames.USE_EXPECT_CONTINUE, 
+    Boolean.FALSE);
+
+httpclient.addRequestInterceptor(new HttpRequestInterceptor() {
+
+    public void process(
+            final HttpRequest request, 
+            final HttpContext context) throws HttpException, IOException {
+        System.out.println(request.getParams().getParameter(
+                CoreProtocolPNames.PROTOCOL_VERSION));
+        System.out.println(request.getParams().getParameter(
+                CoreProtocolPNames.HTTP_CONTENT_CHARSET));
+        System.out.println(request.getParams().getParameter(
+                CoreProtocolPNames.USE_EXPECT_CONTINUE));
+        System.out.println(request.getParams().getParameter(
+                CoreProtocolPNames.STRICT_TRANSFER_ENCODING));
+    }
+    
+});
 ]]></programlisting>
-        <para>HttpClient often has to rewrite the request message in the process of its execution.
-            Per default HTTP/1.0 and HTTP/1.1 generally use relative request URIs. Likewise,
-            original request may get redirected from location to another multiple times. The final
-            interpreted absolute HTTP location can be built using the original request and
-            the context. The utility method <classname>URIUtils#resolve</classname> can be used
-            to build the interpreted absolute URI used to generate the final request. This method
-            includes the last fragment identifier from the redirect requests or the original
-            request.</para>
-        <programlisting><![CDATA[
-CloseableHttpClient httpclient = HttpClients.createDefault();
-HttpClientContext context = HttpClientContext.create();
-HttpGet httpget = new HttpGet("http://localhost:8080/");
-CloseableHttpResponse response = httpclient.execute(httpget, context);
-try {
-    HttpHost target = context.getTargetHost();
-    List<URI> redirectLocations = context.getRedirectLocations();
-    URI location = URIUtils.resolve(httpget.getURI(), target, redirectLocations);
-    System.out.println("Final HTTP location: " + location.toASCIIString());
-    // Expected to be an absolute URI
-} finally {
-    response.close();
-}
+            <para>stdout &gt;</para>
+            <programlisting><![CDATA[
+HTTP/1.1
+UTF-8
+false
+null
 ]]></programlisting>
+        </section>
+        <section>
+            <title>HTTP parameters beans</title>
+            <para><interfacename>HttpParams</interfacename> interface allows for a great deal of
+                flexibility in handling configuration of components. Most importantly, new
+                parameters can be introduced without affecting binary compatibility with older
+                versions. However, <interfacename>HttpParams</interfacename> also has a certain
+                disadvantage compared to regular Java beans:
+                    <interfacename>HttpParams</interfacename> cannot be assembled using a DI
+                framework. To mitigate the limitation, HttpClient includes a number of bean classes
+                that can used in order to initialize <interfacename>HttpParams</interfacename>
+                objects using standard Java bean conventions.</para>
+            <programlisting><![CDATA[
+HttpParams params = new BasicHttpParams();
+HttpProtocolParamBean paramsBean = new HttpProtocolParamBean(params);
+paramsBean.setVersion(HttpVersion.HTTP_1_1);
+paramsBean.setContentCharset("UTF-8");
+paramsBean.setUseExpectContinue(true);
+
+System.out.println(params.getParameter(
+    CoreProtocolPNames.PROTOCOL_VERSION));
+System.out.println(params.getParameter(
+    CoreProtocolPNames.HTTP_CONTENT_CHARSET));
+System.out.println(params.getParameter(
+    CoreProtocolPNames.USE_EXPECT_CONTINUE));
+System.out.println(params.getParameter(
+    CoreProtocolPNames.USER_AGENT));
+]]></programlisting>
+            <para>stdout &gt;</para>
+            <programlisting><![CDATA[
+HTTP/1.1
+UTF-8
+false
+null
+]]></programlisting>
+        </section>
+    </section>
+    <section>
+        <title>HTTP request execution parameters</title>
+        <para>These are parameters that can impact the process of request execution:</para>
+        <itemizedlist>
+            <listitem>
+                <formalpara>
+                    <title>'http.protocol.version':</title>
+                    <para>defines HTTP protocol version used if not set explicitly on the request
+                        object. This parameter expects a value of type
+                            <interfacename>ProtocolVersion</interfacename>. If this parameter is not
+                        set HTTP/1.1 will be used.</para>
+                </formalpara>
+            </listitem>
+            <listitem>
+                <formalpara>
+                    <title>'http.protocol.element-charset':</title>
+                    <para>defines the charset to be used for encoding HTTP protocol elements. This
+                        parameter expects a value of type <classname>java.lang.String</classname>.
+                        If this parameter is not set <literal>US-ASCII</literal> will be
+                        used.</para>
+                </formalpara>
+            </listitem>
+            <listitem>
+                <formalpara>
+                    <title>'http.protocol.content-charset':</title>
+                    <para>defines the charset to be used per default for content body coding. This
+                        parameter expects a value of type <classname>java.lang.String</classname>.
+                        If this parameter is not set <literal>ISO-8859-1</literal> will be
+                        used.</para>
+                </formalpara>
+            </listitem>
+            <listitem>
+                <formalpara>
+                    <title>'http.useragent':</title>
+                    <para>defines the content of the <literal>User-Agent</literal> header. This
+                        parameter expects a value of type <classname>java.lang.String</classname>.
+                        If this parameter is not set, HttpClient will automatically generate a value
+                        for it.</para>
+                </formalpara>
+            </listitem>
+            <listitem>
+                <formalpara>
+                    <title>'http.protocol.strict-transfer-encoding':</title>
+                    <para>defines whether responses with an invalid
+                            <literal>Transfer-Encoding</literal> header should be rejected. This
+                        parameter expects a value of type <classname>java.lang.Boolean</classname>.
+                        If this parameter is not set invalid <literal>Transfer-Encoding</literal>
+                        values will be ignored.</para>
+                </formalpara>
+            </listitem>
+            <listitem>
+                <formalpara>
+                    <title>'http.protocol.expect-continue':</title>
+                    <para>activates <literal>Expect: 100-Continue</literal> handshake for the entity
+                        enclosing methods. The purpose of the <literal>Expect:
+                            100-Continue</literal> handshake is to allow the client that is sending
+                        a request message with a request body to determine if the origin server is
+                        willing to accept the request (based on the request headers) before the
+                        client sends the request body. The use of the <literal>Expect:
+                            100-continue</literal> handshake can result in a noticeable performance
+                        improvement for entity enclosing requests (such as <literal>POST</literal>
+                        and <literal>PUT</literal>) that require the target server's authentication.
+                            <literal>Expect: 100-continue</literal> handshake should be used with
+                        caution, as it may cause problems with HTTP servers and proxies that do not
+                        support HTTP/1.1 protocol. This parameter expects a value of type
+                            <classname>java.lang.Boolean</classname>. If this parameter is not set
+                        HttpClient will attempt to use the handshake.</para>
+                </formalpara>
+            </listitem>
+            <listitem>
+                <formalpara>
+                    <title>'http.protocol.wait-for-continue':</title>
+                    <para>defines the maximum period of time in milliseconds the client should spend
+                        waiting for a <literal>100-continue</literal> response. This parameter
+                        expects a value of type <classname>java.lang.Integer</classname>. If this
+                        parameter is not set HttpClient will wait 3 seconds for a confirmation
+                        before resuming the transmission of the request body.</para>
+                </formalpara>
+            </listitem>
+        </itemizedlist>
     </section>
 </chapter>

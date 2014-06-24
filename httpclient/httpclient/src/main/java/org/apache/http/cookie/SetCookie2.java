@@ -28,9 +28,9 @@
 package org.apache.http.cookie;
 
 /**
- * This interface represents a <code>Set-Cookie2</code> response header sent by the
+ * This interface represents a <code>Set-Cookie2</code> response header sent by the 
  * origin server to the HTTP agent in order to maintain a conversational state.
- *
+ * 
  * @since 4.0
  */
 public interface SetCookie2 extends SetCookie {
@@ -40,21 +40,21 @@ public interface SetCookie2 extends SetCookie {
      * cookie's purpose will be described by the information at this URL.
      */
     void setCommentURL(String commentURL);
-
+    
     /**
      * Sets the Port attribute. It restricts the ports to which a cookie
      * may be returned in a Cookie request header.
      */
     void setPorts(int[] ports);
-
+    
     /**
      * Set the Discard attribute.
      *
-     * Note: {@code Discard</tt> attribute overrides <tt>Max-age}.
+     * Note: <tt>Discard</tt> attribute overrides <tt>Max-age</tt>.
      *
      * @see #isPersistent()
      */
     void setDiscard(boolean discard);
-
+    
 }
 

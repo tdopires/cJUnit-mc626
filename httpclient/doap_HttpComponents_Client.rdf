@@ -1,11 +1,15 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl"?>
 <rdf:RDF xml:lang="en"
-         xmlns="http://usefulinc.com/ns/doap#"
-         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns="http://usefulinc.com/ns/doap#" 
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
          xmlns:asfext="http://projects.apache.org/ns/asfext#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/">
 <!--
+   $HeadURL$
+   $Revision$
+   $Date$
+
    ====================================================================
    Licensed to the Apache Software Foundation (ASF) under one
    or more contributor license agreements.  See the NOTICE file
@@ -38,7 +42,7 @@
     <homepage rdf:resource="http://hc.apache.org/httpcomponents-client/" />
     <asfext:pmc rdf:resource="http://httpcomponents.apache.org" />
     <shortdesc>
-Java library implementing an HTTP client based on HttpCore components.
+Java library implementing an HttpClient based on HttpCore.
     </shortdesc>
     <description>
 HttpClient is a library for client-side HTTP communication built on HttpCore.
@@ -84,61 +88,6 @@ This is the successor to the widely used Jakarta Commons HttpClient 3.1.
         <name>httpcomponents-client-4.0-beta2</name>
         <created>2008-12-20</created>
         <revision>4.0-beta2</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.0</name>
-        <created>2009-08-14</created>
-        <revision>4.0</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.0.1</name>
-        <created>2009-12-11</created>
-        <revision>4.0.1</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.1-alpha1</name>
-        <created>2009-12-11</created>
-        <revision>4.1-alpha1</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.1-alpha2</name>
-        <created>2010-05-19</created>
-        <revision>4.1-alpha2</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.0.2</name>
-        <created>2010-09-09</created>
-        <revision>4.0.2</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.0.3</name>
-        <created>2010-09-19</created>
-        <revision>4.0.3</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.1-beta1</name>
-        <created>2010-11-21</created>
-        <revision>4.1-beta1</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.1 GA</name>
-        <created>2011-01-24</created>
-        <revision>4.1 GA</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.1.1 GA</name>
-        <created>2011-03-20</created>
-        <revision>4.1.1 GA</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.1.2 GA</name>
-        <created>2011-08-07</created>
-        <revision>4.1.2 GA</revision>
-      </Version>
-      <Version>
-        <name>httpcomponents-client-4.2-alpha1</name>
-        <created>2011-11-03</created>
-        <revision>4.2-alpha1</revision>
       </Version>
     </release>
 

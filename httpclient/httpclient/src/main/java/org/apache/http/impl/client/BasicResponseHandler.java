@@ -29,39 +29,47 @@ package org.apache.http.impl.client;
 
 import java.io.IOException;
 
+import org.apache.http.annotation.Immutable;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.annotation.Immutable;
+import org.apache.http.StatusLine;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.util.EntityUtils;
 
 /**
- * A {@link org.apache.http.client.ResponseHandler} that returns the response body as a String
+ * A {@link ResponseHandler} that returns the response body as a String
  * for successful (2xx) responses. If the response code was >= 300, the response
- * body is consumed and an {@link org.apache.http.client.HttpResponseException} is thrown.
- * <p/>
+ * body is consumed and an {@link HttpResponseException} is thrown.
+ * 
  * If this is used with
  * {@link org.apache.http.client.HttpClient#execute(
- *  org.apache.http.client.methods.HttpUriRequest, org.apache.http.client.ResponseHandler)},
+ *  org.apache.http.client.methods.HttpUriRequest, ResponseHandler)},
  * HttpClient may handle redirects (3xx responses) internally.
- *
+ * 
+ * 
  * @since 4.0
  */
 @Immutable
-public class BasicResponseHandler extends AbstractResponseHandler<String> {
+public class BasicResponseHandler implements ResponseHandler<String> {
 
     /**
-     * Returns the entity as a body as a String.
+     * Returns the response body as a String if the response was successful (a
+     * 2xx status code). If no response body exists, this returns null. If the
+     * response was unsuccessful (>= 300 status code), throws an
+     * {@link HttpResponseException}.
      */
-    @Override
-    public String handleEntity(final HttpEntity entity) throws IOException {
-        return EntityUtils.toString(entity);
-    }
+    public String handleResponse(final HttpResponse response)
+            throws HttpResponseException, IOException {
+        StatusLine statusLine = response.getStatusLine();
+        if (statusLine.getStatusCode() >= 300) {
+            throw new HttpResponseException(statusLine.getStatusCode(),
+                    statusLine.getReasonPhrase());
+        }
 
-    @Override
-    public String handleResponse(
-            final HttpResponse response) throws HttpResponseException, IOException {
-        return super.handleResponse(response);
+        HttpEntity entity = response.getEntity();
+        return entity == null ? null : EntityUtils.toString(entity);
     }
 
 }

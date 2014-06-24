@@ -3,10 +3,9 @@ Building HttpComponents Client
 
 (1) Requisites
 --------------
-JDK 1.6+ is required in order to compile and run HttpClient.
-
-HttpClient utilizes Maven as a distribution management and packaging tool.
-Version 3.0.3 or later is required. 
+HttpClient utilizes Maven 2 as a distribution management and packaging tool. Version 2.0.7 or above 
+is recommended. Maven 2 requires JDK 1.4 or above in order to execute. However, JDK 1.5 or above is
+required in order to compile HttpClient.
 
 Maven installation and configuration instructions can be found here:
 
@@ -20,18 +19,14 @@ mvn test
 
 (3) Building packages 
 
-Execute the following command in order to build the JAR packages and install 
-them to the local repository:
+Execute the following command in order to build the JAR packages
 
-mvn install
+mvn package
 
-The JAR packages can be found in the target folders of their respective modules
+The resultant packages can be found in the target folders of their respective modules
 
 httpclient/target/httpclient-<VERSION>.jar
 httpmime/target/httpmime-<VERSION>.jar
-httpclient-cache/target/httpclient-cache-<VERSION>.jar
-fluent-hc/target/fluent-hc-<VERSION>.jar
-httpclient-win/target/httpclient-win-<VERSION>.jar
 httpclient-osgi/target/org.apache.httpcomponents.httpclient_<VERSION>.jar
 
 where <VERSION> is the release version
@@ -45,4 +40,29 @@ mvn javadoc:aggregate
 Execute the following command in order to generate the tutorial in html and pdf formats
 
 mvn docbkx:generate-pdf docbkx:generate-html
+
+(5) Building distribution assemblies 
+
+Execute the following command in order to build the distribution assemblies
+
+mvn package assembly:assembly
+
+(6) Fix EOL in source files
+
+Fix the archive files so the source files have the correct EOL settings:
+
+mvn antrun:run
+
+(7) Building project web site 
+
+Execute the following command in order to generate the project web site:
+
+mvn site -Dclover.license=<path>/clover.license
+
+where <path> is a full path to Clover license file
+
+ASF committers can obtain a copy of Clover license donated to the ASF from the SVN repository
+at the following location:
+
+https://svn.apache.org/repos/private/committers/donated-licenses/clover
 
