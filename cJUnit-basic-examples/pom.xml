@@ -14,6 +14,12 @@
       <version>4.5</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>cjunit</groupId>
+      <artifactId>cjunit</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -28,4 +34,10 @@
       </plugin>
     </plugins>
   </build>
+  <repositories>
+    <repository>
+      <id>repo</id>
+      <url>file://${basedir}/repo</url>
+    </repository>
+  </repositories>
 </project>

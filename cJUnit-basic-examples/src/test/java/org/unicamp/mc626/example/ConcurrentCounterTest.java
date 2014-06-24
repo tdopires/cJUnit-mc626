@@ -20,4 +20,19 @@ public class ConcurrentCounterTest {
 		assertEquals(2, counter.getCurrent());
 	}
 
+	class ConcurrentCounter {
+		int count = 0;
+
+		public int getNext() {
+			int c;
+			synchronized (this) {
+				c = ++count;
+			}
+			return c;
+		}
+
+		public synchronized int getCurrent() {
+			return count;
+		}
+	}
 }
