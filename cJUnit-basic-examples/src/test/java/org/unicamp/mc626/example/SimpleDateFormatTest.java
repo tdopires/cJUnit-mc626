@@ -29,6 +29,12 @@ public class SimpleDateFormatTest {
 	
 	private DateFormat format = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
 	
+	@Test
+	public void testSingleThread() throws ParseException {
+		Date date = format.parse(SAMPLE_DATE);
+		assertEquals(EXPECTED_TIMESTAMP, date.getTime());
+	}
+	
 	@ConcurrentTest(threadCount = 2)
 	public void testWithCJUnit() throws ParseException {
 		Date date = format.parse(SAMPLE_DATE);
@@ -45,17 +51,17 @@ public class SimpleDateFormatTest {
 				return format.parse(SAMPLE_DATE);
 			}
 		};
-
+	
 		// lets try 2 threads only
 		ExecutorService exec = Executors.newFixedThreadPool(2);
 		List<Future<Date>> results = new ArrayList<Future<Date>>();
-
+	
 		// perform 5 date conversions
 		for (int i = 0; i < 5; i++) {
 			results.add(exec.submit(task));
 		}
 		exec.shutdown();
-
+	
 		// look at the results
 		for (Future<Date> result : results) {
 			assertEquals(EXPECTED_TIMESTAMP, result.get().getTime());
